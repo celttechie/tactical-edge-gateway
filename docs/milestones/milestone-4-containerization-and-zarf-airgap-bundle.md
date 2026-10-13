@@ -1,6 +1,6 @@
 # Milestone 4: Containerization, Zarf Airgap Bundle & Lula Compliance
 
-**Status:** Planned  
+**Status:** Planned
 **Objective:** Deliver an immutable, rootless OCI container, a declarative Defense Unicorns Zarf package for offline deployment, and automated NIST SP 800-53 compliance assessment via Lula.
 
 ## Key Deliverables

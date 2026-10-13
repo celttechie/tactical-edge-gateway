@@ -1,6 +1,6 @@
 # Milestone 3: DIL Mesh Resilience & Store-and-Forward Buffering
 
-**Status:** Planned  
+**Status:** Planned
 **Objective:** Guarantee telemetry survival across lossy, disconnected tactical radio links using local SQLite storage and throttled burst synchronization.
 
 ## Key Deliverables

@@ -6,7 +6,7 @@ Date: 2026-10-13
 Accepted
 
 ## Context
-Command and Control (C2) situational awareness tools across the Department of Defense (TAK Server, ATAK, WinTAK, WebTAK) consume geospatial situational awareness through **Cursor on Target (CoT)**, an XML schema standardized by MITRE. 
+Command and Control (C2) situational awareness tools across the Department of Defense (TAK Server, ATAK, WinTAK, WebTAK) consume geospatial situational awareness through **Cursor on Target (CoT)**, an XML schema standardized by MITRE.
 
 Robotics telemetry contains coordinate frames, raw sensor readings, and vehicle statuses that must be transformed into valid CoT `<event>` messages conforming to MIL-STD-2525 symbology standards (e.g., `a-f-G-E-V-U` for friendly ground unmanned vehicles).
 

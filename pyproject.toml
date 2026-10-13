@@ -29,10 +29,17 @@ dev = [
     "black>=23.7.0",
     "flake8>=6.0.0",
     "isort>=5.12.0",
+    "pre-commit>=3.5.0",
+    "bandit[toml]>=1.7.5",
+    "pip-audit>=2.6.0",
 ]
 
 [project.scripts]
 tactical-edge-gateway = "tactical_edge_gateway.main:main"
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+skips = ["B101"]  # Allow assert statements in tests if ever scanned
 
 [tool.black]
 line-length = 100

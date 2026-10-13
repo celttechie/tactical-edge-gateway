@@ -9,7 +9,7 @@ VENV ?= .venv
 PYTHON ?= $(VENV)/bin/python3
 PIP ?= $(VENV)/bin/pip
 
-.PHONY: help venv install dev-install lint format test clean keys docker-build zarf-package
+.PHONY: help venv install dev-install lint format test security pre-commit pre-commit-install clean keys docker-build zarf-package
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -25,6 +25,9 @@ install: venv ## Install project dependencies
 
 dev-install: venv ## Install project dependencies in editable mode with development tools
 	$(PIP) install -e ".[dev]"
+	@if command -v pre-commit >/dev/null 2>&1; then \
+		pre-commit install; \
+	fi
 
 lint: venv ## Run flake8 and code formatting checks
 	$(VENV)/bin/flake8 src tests
@@ -37,6 +40,24 @@ format: venv ## Automatically format code using black and isort
 
 test: venv ## Run unit and integration tests with coverage
 	$(VENV)/bin/pytest tests/
+
+pre-commit: ## Run all pre-commit hooks against the codebase
+	pre-commit run --all-files
+
+pre-commit-install: ## Install pre-commit git hooks
+	pre-commit install
+
+security: ## Run local SAST, secret, and vulnerability security checks
+	@echo "==> Running Bandit SAST scan..."
+	$(VENV)/bin/bandit -c pyproject.toml -r src
+	@echo "==> Running Pip-Audit dependency vulnerability check..."
+	$(VENV)/bin/pip-audit
+	@echo "==> Running Trivy filesystem and secret scan..."
+	@if command -v trivy >/dev/null 2>&1; then \
+		trivy fs --scanners vuln,secret,misconfig .; \
+	else \
+		echo "Trivy CLI not found in PATH. Skipping Trivy scan."; \
+	fi
 
 keys: ## Generate deterministic cryptographic host and service keys for edge testing
 	@python3 scripts/generate-deterministic-keys.py --seed "tactical-edge-gateway-lab-seed"

@@ -13,11 +13,8 @@ without persisting private keys into source control.
 """
 
 import argparse
-import base64
-import hashlib
 import os
-import struct
-import sys
+
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF

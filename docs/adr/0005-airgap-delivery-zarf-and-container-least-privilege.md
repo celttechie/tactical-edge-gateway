@@ -6,7 +6,7 @@ Date: 2026-10-13
 Accepted
 
 ## Context
-Deploying software to tactical edge systems requires operation in classified, air-gapped, or disconnected environments where outbound internet access to public container registries (Docker Hub, Quay) or package repositories (PyPI) is strictly forbidden. 
+Deploying software to tactical edge systems requires operation in classified, air-gapped, or disconnected environments where outbound internet access to public container registries (Docker Hub, Quay) or package repositories (PyPI) is strictly forbidden.
 
 Furthermore, DoD security baselines (e.g., DISA Container Hardening STIG) mandate that containers run rootless without privileged capabilities.
 

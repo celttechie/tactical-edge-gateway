@@ -6,7 +6,7 @@ Date: 2026-10-13
 Accepted
 
 ## Context
-In ephemeral tactical edge test environments, automated CI/CD pipelines, and disconnected sandboxes, edge nodes are frequently rebuilt from scratch. 
+In ephemeral tactical edge test environments, automated CI/CD pipelines, and disconnected sandboxes, edge nodes are frequently rebuilt from scratch.
 
 If SSH host keys are generated randomly on each boot, operators encounter `WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!`. This routinely induces dangerous engineering anti-patterns, such as appending `StrictHostKeyChecking no` and `UserKnownHostsFile /dev/null` into automation scripts, completely compromising transport security. Conversely, checking static private keys into Git repositories introduces serious credential leakage risks.
 

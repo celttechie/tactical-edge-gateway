@@ -23,7 +23,7 @@ flowchart TD
 
         Gateway["Tactical Edge Gateway Engine\n(Telemetry Normalization & Router)"]
         DB[("Local SQLite WAL\nStore & Forward Buffer")]
-        
+
         UAV -- "Binary MAVLink Stream" --> Gateway
         UGV -- "Pub/Sub Topics" --> Gateway
         Gateway -- "If Radio Disconnected" --> DB
@@ -37,7 +37,7 @@ flowchart TD
     subgraph C2["Tactical Platform / C2 Operations"]
         TAK["TAK Server / FreeTAKServer\n(CoT Ingestion Port 4242)"]
         ATAK["ATAK-CIV / WinTAK / WebTAK\n(Air & Ground Blue Force Tracking)"]
-        
+
         TAK --> ATAK
     end
 

@@ -6,7 +6,7 @@ Date: 2026-10-13
 Accepted
 
 ## Context
-Tactical systems deployed into Department of Defense and federal environments must achieve and maintain an Authorization to Operate (ATO) or continuous ATO (cATO). 
+Tactical systems deployed into Department of Defense and federal environments must achieve and maintain an Authorization to Operate (ATO) or continuous ATO (cATO).
 
 Traditional compliance verification relies on static, manual spreadsheets and checklists that drift out of sync with actual software baselines. Defense Unicorns champions automated, declarative compliance using **Lula**—an open-source tool that maps live system configurations, Kubernetes resources, and container states against **NIST SP 800-53** controls defined in machine-readable **OSCAL** (Open Security Controls Assessment Language).
 

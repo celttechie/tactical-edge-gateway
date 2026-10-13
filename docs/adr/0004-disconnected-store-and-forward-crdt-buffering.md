@@ -6,7 +6,7 @@ Date: 2026-10-13
 Accepted
 
 ## Context
-Tactical operations take place in Disconnected, Intermittent, and Limited (DIL) bandwidth environments. Mobile Ad-hoc Networks (MANET) and mesh radios frequently drop links due to terrain masking, electronic warfare, RF interference, or platform movement. 
+Tactical operations take place in Disconnected, Intermittent, and Limited (DIL) bandwidth environments. Mobile Ad-hoc Networks (MANET) and mesh radios frequently drop links due to terrain masking, electronic warfare, RF interference, or platform movement.
 
 Traditional client-server telemetry streaming freezes or throws unhandled socket errors upon link degradation. Dropping telemetry outright loses critical situational awareness, while unbounded in-memory queues cause out-of-memory crashes on resource-constrained edge single-board computers (SBCs).
 

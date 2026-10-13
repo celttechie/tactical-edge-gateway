@@ -1,6 +1,6 @@
 # Milestone 1: Multi-Protocol Telemetry Ingestion (MAVLink & NetworkTables)
 
-**Status:** Completed / Baseline  
+**Status:** Completed / Baseline
 **Objective:** Establish core Python architecture, typed telemetry models, and first-class ingestion for MAVLink (drones/UAVs) and NetworkTables 4 (ground robotics).
 
 ## Key Deliverables

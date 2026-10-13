@@ -1,6 +1,6 @@
 # Milestone 2: ROS2 Ingestion, CoT Translation & TAK Server Egress
 
-**Status:** Planned  
+**Status:** Planned
 **Objective:** Add ROS2/DDS subscriber capability, transform autonomous telemetry into valid MIL-STD Cursor on Target (CoT) XML with appropriate air/ground symbology, and establish network transmission to TAK Server.
 
 ## Key Deliverables
