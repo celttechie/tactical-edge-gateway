@@ -7,11 +7,11 @@
 - [x] Modern Python project scaffolding (`pyproject.toml`, `Makefile`, `.flake8`, `.gitignore`).
 - [x] Deterministic cryptographic identity derivation (`scripts/generate-deterministic-keys.py`).
 - [x] Developer SSH environment onboarding (`scripts/setup-ssh.sh`).
-- [ ] Core data models: `TelemetryFrame`, `GeodeticPosition`, `AttitudeVector`, `PlatformHealth`, `VehicleDomain`.
+- [x] Core data models: `TelemetryFrame`, `GeodeticPosition`, `AttitudeVector`, `PlatformHealth`, `VehicleDomain`.
 - [ ] Ingestion adapters:
   - `MavlinkAdapter` ingesting `GLOBAL_POSITION_INT`, `ATTITUDE`, `HEARTBEAT`, and `SYS_STATUS` via `pymavlink` over UDP.
   - `NetworkTablesAdapter` subscribing to RobotPy / WPILib NT4 topics (`/robot/pose`, `/robot/status`).
-  - `SyntheticTelemetryAdapter` generating waypoint tracks for deterministic offline testing and headless CI.
+  - [x] `SyntheticTelemetryAdapter` generating waypoint tracks for deterministic offline testing and headless CI.
 - [ ] Unit tests for frame serialization, MAVLink packet parsing, and NT4 conversion.
 
 ## Acceptance Criteria
