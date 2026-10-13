@@ -53,3 +53,9 @@ line_length = 100
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --cov=tactical_edge_gateway --cov-report=term-missing"
+
+[tool.pyright]
+include = ["src", "tests", "scripts"]
+extraPaths = ["src"]
+venvPath = "."
+venv = ".venv"
