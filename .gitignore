@@ -1,0 +1,64 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing & Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Local configuration & secrets
+*.env
+target.env
+*.local
+*.pem
+*.key
+!id_*_ed25519.pub
+
+# Ephemeral runtime data & SQLite databases
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Zarf build artifacts (exclude large tarballs)
+packages/zarf/zarf-package-*.tar.zst
+zarf-package-*.tar.zst
