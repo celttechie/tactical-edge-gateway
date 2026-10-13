@@ -27,14 +27,14 @@ jobs:
 
       - name: Install Development Dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install -e ".[dev]"
 
       - name: Run Pre-commit Hooks (Formatting, Linting, Bandit SAST, Gitleaks)
         uses: pre-commit/action@v3.0.1
 
       - name: Run Trivy Security Scan (Vulnerabilities, Secrets, Misconfigurations)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: "fs"
           scan-ref: "."
@@ -62,7 +62,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install -e ".[dev]"
 
       - name: Run Dependency Vulnerability Audit (pip-audit)
