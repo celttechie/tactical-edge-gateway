@@ -1,6 +1,6 @@
 # Tactical Edge Gateway - Implementation Plan
 
-This document details the engineering roadmap and execution plan for the **Tactical Edge Gateway**, designed to bridge heterogeneous autonomy and unmanned systems pub/sub telemetry (**MAVLink**, **ROS2/DDS**, **NetworkTables 4**) to tactical C2 platforms (**Cursor on Target / TAK Server**) over contested DIL networks, packaged declaratively with **Zarf** and audited continuously with **Lula**.
+This document details the engineering roadmap and execution plan for the **Tactical Edge Gateway**, designed to bridge heterogeneous autonomy and unmanned systems pub/sub telemetry (**MAVLink** and **ROS2/DDS**) to tactical C2 platforms (**Cursor on Target / TAK Server**) over contested DIL networks, packaged declaratively with **Zarf** and audited continuously with **Lula**.
 
 ---
 
@@ -8,7 +8,7 @@ This document details the engineering roadmap and execution plan for the **Tacti
 
 ```mermaid
 flowchart LR
-    Phase1["Phase 1: Multi-Protocol Ingestion\n(MAVLink + NT4 + Synthetic)"] --> Phase2["Phase 2: ROS2 & CoT Translation\n(Air/Ground MIL-STD Symbology)"]
+    Phase1["Phase 1: Multi-Protocol Ingestion\n(MAVLink + Synthetic)"] --> Phase2["Phase 2: ROS2 & CoT Translation\n(Air/Ground MIL-STD Symbology)"]
     Phase2 --> Phase3["Phase 3: DIL Resilience\n(Store & Forward Buffer)"]
     Phase3 --> Phase4["Phase 4: Air-Gap & Compliance\n(Zarf Bundle + Lula OSCAL)"]
     Phase4 --> Phase5["Phase 5: E2E Demonstration\n(ATAK Moving Map)"]
@@ -17,9 +17,8 @@ flowchart LR
 ### Phase 1: Multi-Protocol Ingestion Adapters & Data Modeling
 * Define strongly typed telemetry dataclasses (`TelemetryFrame`, `GeodeticPosition`, `AttitudeVector`, `PlatformHealth`, `VehicleDomain`).
 * Implement `MavlinkAdapter` ingesting UAV telemetry (`GLOBAL_POSITION_INT`, `ATTITUDE`, `HEARTBEAT`, `SYS_STATUS`) over UDP (port 14550) via `pymavlink`.
-* Implement `NetworkTablesAdapter` connecting to RobotPy / WPILib NT4 server over WebSockets.
-* Implement `SyntheticTelemetryAdapter` with simulated waypoint flight/ground navigation paths.
-* Add unit tests verifying schema serialization, MAVLink packet parsing, and rate throttling.
+* Implement `SyntheticAdapter` with simulated waypoint flight/ground navigation paths.
+* Add unit and live loopback network integration tests verifying schema serialization, MAVLink packet parsing, multi-vehicle state aggregation, and rate throttling.
 
 ### Phase 2: ROS2 Ingestion, CoT Transformation & TAK Network Egress
 * Implement `ROS2Adapter` subscribing to `sensor_msgs/NavSatFix` and `nav_msgs/Odometry`.
@@ -62,7 +61,6 @@ flowchart LR
 | :--- | :--- | :--- |
 | **Language & Runtime** | Python 3.10+ / Asyncio | PEP 621 / PyPA |
 | **UAS Telemetry** | MAVLink (`pymavlink`) | MAVLink 2.0 Protocol (Micro Air Vehicle Link) |
-| **Robotics Ingest** | NetworkTables 4 (`pyntcore`) | WPILib NT4 Specification |
 | **Ground Autonomy** | ROS2 / DDS | ROS2 Galactic/Humble (`rclpy` / DDS pub-sub) |
 | **Military C2 Schema** | Cursor on Target (CoT) XML | MITRE / MIL-STD-2525 Symbology |
 | **Storage & Buffer** | SQLite (WAL Mode) | ACID Persistent Edge Store / CRDT Ordering |

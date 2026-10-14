@@ -2,7 +2,7 @@
 
 Defines normalized, strongly typed Pydantic data schemas representing vehicle
 kinematics, geodetic position, orientation, and platform health across
-heterogeneous autonomy protocols (MAVLink, ROS2, and NetworkTables).
+heterogeneous autonomy protocols (MAVLink and ROS2).
 """
 
 from __future__ import annotations
