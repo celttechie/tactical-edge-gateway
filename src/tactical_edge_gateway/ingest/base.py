@@ -44,3 +44,10 @@ class BaseTelemetryAdapter(ABC):
         Yields:
             TelemetryFrame: Next validated frame from the underlying protocol stream.
         """
+        if False:
+            yield TelemetryFrame(  # type: ignore[call-arg]
+                uid="",
+                callsign="",
+                domain=None,  # type: ignore[arg-type]
+                position=None,  # type: ignore[arg-type]
+            )
