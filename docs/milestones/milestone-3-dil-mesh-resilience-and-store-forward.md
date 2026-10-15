@@ -1,14 +1,14 @@
 # Milestone 3: DIL Mesh Resilience & Store-and-Forward Buffering
 
-**Status:** Planned
+**Status:** Completed
 **Objective:** Guarantee telemetry survival across lossy, disconnected tactical radio links using local SQLite storage and throttled burst synchronization.
 
 ## Key Deliverables
-- [ ] Persistent SQLite buffer with WAL (Write-Ahead Logging) mode.
-- [ ] State tracking: Monotonic sequence numbers, timestamps, and delivery states (`PENDING`, `SYNCED`).
-- [ ] Network monitor / circuit breaker detecting link drops and restoration.
-- [ ] Rate-limited replay worker preventing radio link saturation upon reconnection.
-- [ ] Configurable storage retention policies (max DB size, FIFO pruning, stale packet drop).
+- [x] Persistent SQLite buffer with WAL (Write-Ahead Logging) mode (`SqliteBuffer`).
+- [x] State tracking: Monotonic sequence numbers, timestamps, and delivery states (`PENDING`, `TRANSMITTING`, `SYNCED`, `FAILED`, `EXPIRED`).
+- [x] Network monitor / circuit breaker detecting link drops and restoration (`CircuitBreaker`).
+- [x] Rate-limited replay worker preventing radio link saturation upon reconnection (`StoreAndForwardWorker`).
+- [x] Configurable storage retention policies (max DB size, FIFO pruning, stale packet drop).
 
 ## Acceptance Criteria
 1. When upstream network socket is forcibly closed, telemetry continues queueing to disk without memory leakage.

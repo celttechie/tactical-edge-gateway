@@ -47,23 +47,22 @@ class SqliteBuffer:
         conn.execute("PRAGMA busy_timeout = 5000;")
         conn.execute("PRAGMA temp_store = MEMORY;")
 
+        table_sql = (
+            "CREATE TABLE IF NOT EXISTS telemetry_buffer ("
+            "    id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "    uid TEXT NOT NULL,"
+            "    cot_type TEXT NOT NULL,"
+            "    timestamp REAL NOT NULL,"
+            "    stale_timestamp REAL NOT NULL,"
+            "    payload BLOB NOT NULL,"
+            "    state TEXT NOT NULL DEFAULT 'PENDING',"
+            "    retry_count INTEGER NOT NULL DEFAULT 0,"
+            "    created_at REAL NOT NULL,"
+            "    synced_at REAL"
+            ");"
+        )
         with conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS telemetry_buffer (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    uid TEXT NOT NULL,
-                    cot_type TEXT NOT NULL,
-                    timestamp REAL NOT NULL,
-                    stale_timestamp REAL NOT NULL,
-                    payload BLOB NOT NULL,
-                    state TEXT NOT NULL DEFAULT 'PENDING',
-                    retry_count INTEGER NOT NULL DEFAULT 0,
-                    created_at REAL NOT NULL,
-                    synced_at REAL
-                );
-                """
-            )
+            conn.execute(table_sql)
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_buffer_state_id "
                 "ON telemetry_buffer(state, id ASC);"
@@ -319,17 +318,15 @@ class SqliteBuffer:
 
         def _stats() -> BufferStats:
             assert self._conn is not None
-            cursor = self._conn.execute(
-                """
-                SELECT
-                    COUNT(*) as total,
-                    SUM(CASE WHEN state = 'PENDING' THEN 1 ELSE 0 END) as pending,
-                    SUM(CASE WHEN state = 'SYNCED' THEN 1 ELSE 0 END) as synced,
-                    SUM(CASE WHEN state = 'FAILED' THEN 1 ELSE 0 END) as failed,
-                    SUM(CASE WHEN state = 'EXPIRED' THEN 1 ELSE 0 END) as expired
-                FROM telemetry_buffer;
-                """
+            query = (
+                "SELECT COUNT(*) as total, "
+                "SUM(CASE WHEN state = 'PENDING' THEN 1 ELSE 0 END) as pending, "
+                "SUM(CASE WHEN state = 'SYNCED' THEN 1 ELSE 0 END) as synced, "
+                "SUM(CASE WHEN state = 'FAILED' THEN 1 ELSE 0 END) as failed, "
+                "SUM(CASE WHEN state = 'EXPIRED' THEN 1 ELSE 0 END) as expired "
+                "FROM telemetry_buffer;"
             )
+            cursor = self._conn.execute(query)
             row = cursor.fetchone()
             total = row["total"] or 0
             pending = row["pending"] or 0

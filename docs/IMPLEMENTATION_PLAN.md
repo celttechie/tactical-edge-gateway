@@ -10,7 +10,8 @@ This document details the engineering roadmap and execution plan for the **Tacti
 flowchart LR
     Phase1["Phase 1: Multi-Protocol Ingestion\n(MAVLink + Synthetic)"] --> Phase2["Phase 2: ROS2 & CoT Translation\n(Air/Ground MIL-STD Symbology)"]
     Phase2 --> Phase3["Phase 3: DIL Resilience\n(Store & Forward Buffer)"]
-    Phase3 --> Phase4["Phase 4: Air-Gap & Compliance\n(Zarf Bundle + Lula OSCAL)"]
+    Phase3 --> Phase35["Phase 3.5: Core Modularization\n(EvictingQueue + AsyncService)"]
+    Phase35 --> Phase4["Phase 4: Air-Gap & Compliance\n(Zarf Bundle + Lula OSCAL)"]
     Phase4 --> Phase5["Phase 5: E2E Demonstration\n(ATAK Moving Map)"]
 ```
 
@@ -32,11 +33,18 @@ flowchart LR
 * Validate generated XML against MITRE CoT schemas.
 
 ### Phase 3: DIL Resilience & Disconnected Store-and-Forward
-* Implement SQLite-backed persistent buffer in WAL mode.
-* Track queue delivery states (`PENDING`, `TRANSMITTING`, `SYNCED`).
-* Implement network circuit breaker with health probes.
-* Implement rate-limited backlog synchronization upon radio link recovery.
-* Add unit tests simulating 100% packet loss and subsequent burst recovery.
+* Implement SQLite-backed persistent buffer in WAL mode (`SqliteBuffer`).
+* Track queue delivery states (`PENDING`, `TRANSMITTING`, `SYNCED`, `FAILED`, `EXPIRED`).
+* Implement network circuit breaker with health probes (`CircuitBreaker`).
+* Implement rate-limited backlog synchronization upon radio link recovery (`StoreAndForwardWorker`).
+* Add end-to-end integration test validating severed links and burst recovery.
+
+### Phase 3.5: Core Abstractions Refactoring & Codebase Modularization
+* Centralize bounded FIFO drop-oldest concurrency logic into `EvictingQueue`.
+* Standardize asynchronous lifecycle and context management into `AsyncService`.
+* Consolidate Euler angle clamping and coordinate normalization.
+* Decouple `GatewayEngine` initialization from CLI args using `GatewayConfig` Pydantic models.
+* Harmonize operational metrics under unified `Stats` hierarchy.
 
 ### Phase 4: Rootless Containerization, Zarf Packaging & Lula Compliance
 * Build multi-stage Dockerfile adhering to DISA Container Hardening STIG (non-root `edgeuser`, read-only rootfs).
