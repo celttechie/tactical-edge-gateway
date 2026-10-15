@@ -180,3 +180,42 @@ def test_json_roundtrip_serialization():
     reconstructed = TelemetryFrame.model_validate_json(json_str)
 
     assert reconstructed == frame
+
+
+def test_attitude_vector_from_unclamped_degrees():
+    """Verify AttitudeVector.from_unclamped_degrees clamps, wraps, and rounds properly."""
+    # 1. Normal values within bounds
+    att1 = AttitudeVector.from_unclamped_degrees(roll=15.0, pitch=30.0, yaw=45.0)
+    assert att1.roll_deg == 15.0
+    assert att1.pitch_deg == 30.0
+    assert att1.yaw_deg == 45.0
+
+    # 2. Clamping roll and pitch overshoots
+    att2 = AttitudeVector.from_unclamped_degrees(roll=250.0, pitch=120.0, yaw=0.0)
+    assert att2.roll_deg == 180.0
+    assert att2.pitch_deg == 90.0
+    assert att2.yaw_deg == 0.0
+
+    # 3. Clamping roll and pitch undershoots
+    att3 = AttitudeVector.from_unclamped_degrees(roll=-200.0, pitch=-100.0, yaw=0.0)
+    assert att3.roll_deg == -180.0
+    assert att3.pitch_deg == -90.0
+    assert att3.yaw_deg == 0.0
+
+    # 4. Yaw wrapping (positive and negative)
+    att4 = AttitudeVector.from_unclamped_degrees(roll=0.0, pitch=0.0, yaw=370.0)
+    assert att4.yaw_deg == 10.0
+
+    att5 = AttitudeVector.from_unclamped_degrees(roll=0.0, pitch=0.0, yaw=-45.0)
+    assert att5.yaw_deg == 315.0
+
+    att6 = AttitudeVector.from_unclamped_degrees(roll=0.0, pitch=0.0, yaw=720.0)
+    assert att6.yaw_deg == 0.0
+
+    # 5. Rounding behavior
+    att7 = AttitudeVector.from_unclamped_degrees(
+        roll=12.3456, pitch=-45.6789, yaw=89.1234, round_digits=2
+    )
+    assert att7.roll_deg == 12.35
+    assert att7.pitch_deg == -45.68
+    assert att7.yaw_deg == 89.12

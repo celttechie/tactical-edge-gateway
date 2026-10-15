@@ -95,6 +95,42 @@ class AttitudeVector(BaseModel):
         description="Yaw angle in degrees clockwise from North (0.0 to 360.0)",
     )
 
+    @classmethod
+    def from_unclamped_degrees(
+        cls,
+        roll: float,
+        pitch: float,
+        yaw: float,
+        round_digits: int | None = None,
+    ) -> AttitudeVector:
+        """Constructs an AttitudeVector by safely clamping and normalizing raw degrees.
+
+        Clamps roll to [-180.0, 180.0], pitch to [-90.0, 90.0], and wraps
+        yaw modulo 360.0 into [0.0, 360.0].
+
+        Args:
+            roll: Raw roll angle in degrees.
+            pitch: Raw pitch angle in degrees.
+            yaw: Raw yaw / azimuth angle in degrees.
+            round_digits: Optional decimal places to round output coordinates.
+
+        Returns:
+            Normalized AttitudeVector adhering to Tait-Bryan boundary constraints.
+        """
+        r = max(-180.0, min(180.0, float(roll)))
+        p = max(-90.0, min(90.0, float(pitch)))
+        y = max(0.0, min(360.0, float(yaw) % 360.0))
+
+        if round_digits is not None:
+            r = round(r, round_digits)
+            p = round(p, round_digits)
+            y = round(y, round_digits)
+            r = max(-180.0, min(180.0, r))
+            p = max(-90.0, min(90.0, p))
+            y = max(0.0, min(360.0, y))
+
+        return cls(roll_deg=r, pitch_deg=p, yaw_deg=y)
+
 
 class PlatformHealth(BaseModel):
     """Platform subsystem telemetry, battery, and radio metrics."""

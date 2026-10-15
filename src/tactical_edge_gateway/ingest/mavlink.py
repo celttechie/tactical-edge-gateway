@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
+from pydantic import ValidationError
 from pymavlink import mavutil
 from pymavlink.dialects.v20 import common as mavlink2
 
@@ -157,15 +158,11 @@ class MavlinkAdapter(BaseTelemetryAdapter):
         raw_pitch = math.degrees(getattr(msg, "pitch", 0.0))
         raw_yaw = math.degrees(getattr(msg, "yaw", 0.0))
 
-        # Clamp and normalize to model boundaries
-        roll_deg = max(-180.0, min(180.0, raw_roll))
-        pitch_deg = max(-90.0, min(90.0, raw_pitch))
-        yaw_deg = (raw_yaw + 360.0) % 360.0
-
-        state.attitude = AttitudeVector(
-            roll_deg=round(roll_deg, 2),
-            pitch_deg=round(pitch_deg, 2),
-            yaw_deg=round(yaw_deg, 2),
+        state.attitude = AttitudeVector.from_unclamped_degrees(
+            roll=raw_roll,
+            pitch=raw_pitch,
+            yaw=raw_yaw,
+            round_digits=2,
         )
 
     def _handle_sys_status(self, msg: Any, state: _PlatformState) -> None:
@@ -204,14 +201,6 @@ class MavlinkAdapter(BaseTelemetryAdapter):
         lat = getattr(msg, "lat", 0) / 1e7
         lon = getattr(msg, "lon", 0) / 1e7
 
-        if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
-            logger.warning(
-                "Dropping MAVLink GLOBAL_POSITION_INT with invalid coordinates: lat=%s lon=%s",
-                lat,
-                lon,
-            )
-            return None
-
         alt_msl_m = getattr(msg, "alt", 0) / 1000.0
         alt_hae_m = getattr(msg, "relative_alt", 0) / 1000.0
 
@@ -222,14 +211,22 @@ class MavlinkAdapter(BaseTelemetryAdapter):
         raw_hdg = getattr(msg, "hdg", 65535)
         heading_deg = round(raw_hdg / 100.0, 2) if (0 <= raw_hdg <= 36000) else None
 
-        position = GeodeticPosition(
-            latitude=round(lat, 7),
-            longitude=round(lon, 7),
-            altitude_msl_m=round(alt_msl_m, 2),
-            altitude_hae_m=round(alt_hae_m, 2),
-            heading_deg=heading_deg,
-            speed_mps=speed_mps,
-        )
+        try:
+            position = GeodeticPosition(
+                latitude=round(lat, 7),
+                longitude=round(lon, 7),
+                altitude_msl_m=round(alt_msl_m, 2),
+                altitude_hae_m=round(alt_hae_m, 2),
+                heading_deg=heading_deg,
+                speed_mps=speed_mps,
+            )
+        except (ValidationError, ValueError) as e:
+            logger.warning(
+                "Dropping MAVLink GLOBAL_POSITION_INT with invalid coordinates: %s",
+                e,
+            )
+            return None
+
         state.position = position
 
         frame = TelemetryFrame(

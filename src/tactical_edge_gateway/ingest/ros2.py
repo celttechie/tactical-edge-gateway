@@ -14,6 +14,8 @@ from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 from typing import Any
 
+from pydantic import ValidationError
+
 from tactical_edge_gateway.core.models import (
     AttitudeVector,
     GeodeticPosition,
@@ -62,14 +64,10 @@ def quaternion_to_euler_deg(x: float, y: float, z: float, w: float) -> tuple[flo
 
     roll_deg = math.degrees(roll_rad)
     pitch_deg = math.degrees(pitch_rad)
-    yaw_deg = (math.degrees(yaw_rad) + 360.0) % 360.0
+    yaw_deg = math.degrees(yaw_rad)
 
-    # Ensure bounds enforcement matches schema
-    roll_deg = max(-180.0, min(180.0, roll_deg))
-    pitch_deg = max(-90.0, min(90.0, pitch_deg))
-    yaw_deg = max(0.0, min(360.0, yaw_deg))
-
-    return roll_deg, pitch_deg, yaw_deg
+    att = AttitudeVector.from_unclamped_degrees(roll_deg, pitch_deg, yaw_deg)
+    return att.roll_deg, att.pitch_deg, att.yaw_deg
 
 
 class ROS2Adapter(BaseTelemetryAdapter):
@@ -180,11 +178,6 @@ class ROS2Adapter(BaseTelemetryAdapter):
             lon = float(msg.longitude)
             alt = float(getattr(msg, "altitude", 0.0))
 
-            # Validate basic latitude/longitude ranges
-            if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
-                logger.warning("Invalid coordinates in NavSatFix: lat=%f, lon=%f", lat, lon)
-                return None
-
             # Calculate horizontal accuracy / circular error from covariance matrix
             cov = getattr(msg, "position_covariance", None)
             ce = 10.0
@@ -220,6 +213,9 @@ class ROS2Adapter(BaseTelemetryAdapter):
             self._enqueue_frame(frame)
             return frame
 
+        except ValidationError as e:
+            logger.warning("Invalid coordinates in NavSatFix: %s", e)
+            return None
         except Exception as e:
             logger.error("Error processing ROS2 NavSatFix message: %s", e)
             return None
