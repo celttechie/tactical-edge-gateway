@@ -226,3 +226,89 @@ async def test_tcp_egress_start_idempotent_and_backoff(monkeypatch):
 
     await client.stop()
     assert not client.is_running
+
+
+@pytest.mark.asyncio
+async def test_tcp_egress_connection_close_and_rx_monitor_error_handling():
+    """Verify _close_connection handles active rx_task and writer exceptions,
+    and _rx_monitor handles read errors.
+    """
+    import asyncio
+    from unittest.mock import MagicMock
+
+    client = TcpEgressClient(host="127.0.0.1", port=8087)
+    client._running = True
+    client._connected = True
+
+    # 1. _close_connection with active _rx_task and flaky writer.wait_closed
+    # (lines 136-137, 142-143)
+    dummy_task = asyncio.create_task(asyncio.sleep(10))
+    client._rx_task = dummy_task
+
+    mock_writer = MagicMock()
+    mock_writer.close = MagicMock()
+
+    async def flaky_wait_closed():
+        raise OSError("Socket already torn down")
+
+    mock_writer.wait_closed = flaky_wait_closed
+    client._writer = mock_writer
+
+    await client._close_connection()
+    assert client._rx_task is None
+    assert client._writer is None
+    try:
+        await dummy_task
+    except asyncio.CancelledError:
+        pass
+    assert dummy_task.cancelled()
+
+    # 2. _rx_monitor error handling (line 155)
+    mock_reader = MagicMock()
+
+    async def flaky_read(size):
+        raise ConnectionResetError("Connection lost")
+
+    mock_reader.read = flaky_read
+    client._running = True
+    client._connected = True
+    await client._rx_monitor(mock_reader)
+    assert not client._connected
+
+
+@pytest.mark.asyncio
+async def test_tcp_egress_transmitter_socket_error_handling():
+    """Verify transmitter loop handles write/drain socket exceptions (lines 211-217)."""
+    import asyncio
+    from unittest.mock import MagicMock
+
+    client = TcpEgressClient(host="127.0.0.1", port=8087)
+    client._running = True
+    client._connected = True
+
+    mock_writer = MagicMock()
+    mock_writer.write = MagicMock()
+
+    async def crash_drain():
+        raise BrokenPipeError("Broken pipe during write")
+
+    async def noop_wait():
+        pass
+
+    mock_writer.drain = crash_drain
+    mock_writer.wait_closed = noop_wait
+    client._writer = mock_writer
+
+    await client._queue.put(b"<event/>")
+    tx_task = asyncio.create_task(client._connection_and_tx_loop())
+    await asyncio.sleep(0.05)
+
+    assert client.stats.errors_count >= 1
+    assert not client.is_connected
+
+    client._running = False
+    tx_task.cancel()
+    try:
+        await tx_task
+    except asyncio.CancelledError:
+        pass

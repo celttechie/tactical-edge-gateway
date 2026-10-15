@@ -49,6 +49,11 @@ class BaseEgressClient(ABC):
         return self._running
 
     @property
+    def is_connected(self) -> bool:
+        """Indicates whether the egress transport link is connected and healthy."""
+        return self._running
+
+    @property
     def stats(self) -> EgressStats:
         """Current operational egress telemetry statistics."""
         return self._stats
