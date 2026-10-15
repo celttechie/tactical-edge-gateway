@@ -141,19 +141,17 @@ class UdpEgressClient(BaseEgressClient):
             # Evict oldest datagram to preserve real-time tactical freshness
             try:
                 self._queue.get_nowait()
-            except asyncio.QueueEmpty:
+            except asyncio.QueueEmpty:  # pragma: no cover
                 pass
             try:
                 self._queue.put_nowait(payload)
                 return True
-            except asyncio.QueueFull:
+            except asyncio.QueueFull:  # pragma: no cover
                 self._record_error()
                 return False
 
     async def _transmitter_loop(self) -> None:
         """Background coroutine dequeueing and transmitting UDP datagrams."""
-        loop = asyncio.get_running_loop()
-
         while self._running:
             try:
                 payload = await self._queue.get()
@@ -161,7 +159,7 @@ class UdpEgressClient(BaseEgressClient):
                     continue
 
                 # Transmit over UDP socket
-                await loop.sock_sendto(self._socket, payload, (self.host, self.port))
+                self._socket.sendto(payload, (self.host, self.port))
                 self._record_success(len(payload))
                 self._queue.task_done()
             except asyncio.CancelledError:

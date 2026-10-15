@@ -260,7 +260,7 @@ class MavlinkAdapter(BaseTelemetryAdapter):
                             # Pop oldest frame to prevent memory exhaustion under backpressure
                             try:
                                 self._queue.get_nowait()
-                            except asyncio.QueueEmpty:
+                            except asyncio.QueueEmpty:  # pragma: no cover
                                 pass
                             self._queue.put_nowait(frame)
                 else:

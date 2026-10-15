@@ -1,6 +1,6 @@
 # Milestone 2: ROS2 Ingestion, CoT Translation & TAK Server Egress
 
-**Status:** In Progress
+**Status:** Completed
 **Objective:** Add ROS2/DDS subscriber capability, transform autonomous telemetry into valid MIL-STD Cursor on Target (CoT) XML with appropriate air/ground symbology, and establish network transmission to TAK Server.
 
 ## Key Deliverables
@@ -15,7 +15,7 @@
 - [x] Schema validation & integration suites:
   - [x] CoT schema validation, mandatory attributes, ISO-8601 millisecond UTC timestamps, and round-trip conversion.
   - [x] Live network loopback integration tests (UDP datagram transmission, persistent TCP streaming, and end-to-end MAVLink-to-CoT pipeline).
-- [ ] ROS2 / DDS Ingest Adapter (`ROS2Adapter`) subscribing to `nav_msgs/Odometry` and `sensor_msgs/NavSatFix`.
+- [x] ROS2 / DDS Ingest Adapter (`ROS2Adapter`) subscribing to `nav_msgs/Odometry` and `sensor_msgs/NavSatFix`.
 
 ## Acceptance Criteria
 1. Generated CoT XML is consumed without errors by FreeTAKServer or standard TAK Server.

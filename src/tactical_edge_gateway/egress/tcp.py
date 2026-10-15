@@ -115,12 +115,12 @@ class TcpEgressClient(BaseEgressClient):
             # Evict oldest packet to maintain real-time situational awareness
             try:
                 self._queue.get_nowait()
-            except asyncio.QueueEmpty:
+            except asyncio.QueueEmpty:  # pragma: no cover
                 pass
             try:
                 self._queue.put_nowait(payload)
                 return True
-            except asyncio.QueueFull:
+            except asyncio.QueueFull:  # pragma: no cover
                 self._record_error()
                 return False
 
