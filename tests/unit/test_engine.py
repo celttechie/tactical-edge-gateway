@@ -402,3 +402,252 @@ def test_main_cli_execution_and_keyboard_interrupt(monkeypatch):
     monkeypatch.setattr(asyncio, "run", mock_run)
     exit_code = main(["--synthetic"])
     assert exit_code == 0
+
+
+@pytest.mark.asyncio
+async def test_gateway_engine_with_sqlite_buffer_lifecycle_and_buffering():
+    """Verify GatewayEngine lifecycle with buffer, circuit breaker, and outage buffering."""
+    from tactical_edge_gateway.buffer.circuit_breaker import CircuitBreaker
+    from tactical_edge_gateway.buffer.models import CircuitState
+    from tactical_edge_gateway.buffer.sqlite import SqliteBuffer
+    from tactical_edge_gateway.core.models import (
+        GeodeticPosition,
+        PlatformHealth,
+        TelemetryFrame,
+        VehicleDomain,
+    )
+    from tactical_edge_gateway.egress.base import BaseEgressClient
+
+    buffer = SqliteBuffer(":memory:")
+    cb = CircuitBreaker(failure_threshold=1)
+
+    class FlakyEgress(BaseEgressClient):
+        def __init__(self):
+            super().__init__(name="flaky")
+            self.should_succeed = True
+            self.received_frames = []
+
+        async def start(self):
+            self._running = True
+
+        async def stop(self):
+            self._running = False
+
+        @property
+        def is_connected(self) -> bool:
+            return self._running and self.should_succeed
+
+        async def send_frame(self, frame):
+            if not self.should_succeed:
+                raise ConnectionError("Link down")
+            self.received_frames.append(frame)
+            return True
+
+        async def send_cot(self, cot_xml):
+            return self.should_succeed
+
+    egress = FlakyEgress()
+    engine = GatewayEngine(
+        egress_clients=[egress],
+        buffer=buffer,
+        circuit_breaker=cb,
+        replay_rate_hz=50.0,
+    )
+
+    async with engine:
+        assert engine.sync_worker is not None
+        assert engine.sync_worker.is_running
+
+        frame1 = TelemetryFrame(
+            uid="drone-1",
+            callsign="VIPER-1",
+            domain=VehicleDomain.AIR,
+            position=GeodeticPosition(latitude=34.0, longitude=-118.0, altitude_msl_m=100.0),
+            health=PlatformHealth(),
+        )
+
+        # 1. Normal healthy transmission
+        await engine._router_queue.put(frame1)
+        await asyncio.sleep(0.05)
+        assert len(egress.received_frames) == 1
+        assert cb.state == CircuitState.CLOSED
+        assert engine.stats.frames_buffered == 0
+
+        # 2. Link fails -> Trips circuit breaker to OPEN and buffers to SQLite
+        egress.should_succeed = False
+        frame2 = TelemetryFrame(
+            uid="drone-2",
+            callsign="VIPER-2",
+            domain=VehicleDomain.AIR,
+            position=GeodeticPosition(latitude=35.0, longitude=-119.0, altitude_msl_m=200.0),
+            health=PlatformHealth(),
+        )
+        await engine._router_queue.put(frame2)
+        await asyncio.sleep(0.05)
+        assert cb.state == CircuitState.OPEN
+        assert engine.stats.frames_buffered >= 1
+
+        # 3. Subsequent frames while OPEN go straight to buffer
+        frame3 = TelemetryFrame(
+            uid="drone-3",
+            callsign="VIPER-3",
+            domain=VehicleDomain.AIR,
+            position=GeodeticPosition(latitude=36.0, longitude=-120.0, altitude_msl_m=300.0),
+            health=PlatformHealth(),
+        )
+        await engine._router_queue.put(frame3)
+        await asyncio.sleep(0.05)
+        assert engine.stats.frames_buffered >= 2
+
+        # 4. Link recovers -> reset circuit breaker, sync_worker drains backlog
+        egress.should_succeed = True
+        cb.reset()
+        await asyncio.sleep(0.1)
+
+        stats = await buffer.get_stats()
+        assert stats.synced_records >= 2
+
+    # Verify stop closes buffer and stops worker
+    assert not engine.sync_worker.is_running
+
+
+@pytest.mark.asyncio
+async def test_gateway_engine_buffer_helpers_and_error_handling():
+    """Verify _replay_send_cot empty egress handling and _buffer_frame exception handling."""
+    from unittest.mock import MagicMock
+
+    from tactical_edge_gateway.buffer.sqlite import SqliteBuffer
+    from tactical_edge_gateway.core.models import (
+        GeodeticPosition,
+        PlatformHealth,
+        TelemetryFrame,
+        VehicleDomain,
+    )
+
+    buffer = SqliteBuffer(":memory:")
+    engine = GatewayEngine(buffer=buffer)
+
+    # 1. Replay with no egress clients returns False
+    assert await engine._replay_send_cot(b"<event/>") is False
+
+    # 2. _buffer_frame exception handling
+    bad_frame = TelemetryFrame(
+        uid="err-drone",
+        callsign="ERR-1",
+        domain=VehicleDomain.AIR,
+        position=GeodeticPosition(latitude=0.0, longitude=0.0, altitude_msl_m=0.0),
+        health=PlatformHealth(),
+    )
+    # Monkeypatch transformer to raise exception
+    engine.transformer.transform = MagicMock(side_effect=ValueError("Bad CoT generation"))
+    await engine._buffer_frame(bad_frame)
+    assert engine.stats.errors_count >= 1
+
+    # 3. _buffer_frame with buffer=None is no-op
+    engine.buffer = None
+    await engine._buffer_frame(bad_frame)
+
+    await buffer.close()
+
+
+@pytest.mark.asyncio
+async def test_run_gateway_with_buffer_cli_flag(tmp_path):
+    """Verify run_gateway initializes SqliteBuffer when --buffer-path is passed."""
+    from tactical_edge_gateway.main import build_parser, run_gateway
+
+    db_file = tmp_path / "cli_buffer.db"
+    parser = build_parser()
+    args = parser.parse_args(
+        ["--synthetic", "--buffer-path", str(db_file), "--replay-rate-hz", "30.0"]
+    )
+
+    stop_event = asyncio.Event()
+
+    async def _stopper():
+        await asyncio.sleep(0.05)
+        stop_event.set()
+
+    stopper_task = asyncio.create_task(_stopper())
+    exit_code = await run_gateway(args, stop_event=stop_event)
+    await stopper_task
+
+    assert exit_code == 0
+    assert db_file.exists()
+
+
+@pytest.mark.asyncio
+async def test_gateway_engine_router_egress_send_exception_trips_breaker_and_buffers():
+    """Verify circuit breaker trips and frame is buffered when send_frame raises an exception."""
+    from tactical_edge_gateway.buffer.circuit_breaker import CircuitBreaker
+    from tactical_edge_gateway.buffer.models import CircuitState
+    from tactical_edge_gateway.buffer.sqlite import SqliteBuffer
+    from tactical_edge_gateway.core.models import (
+        GeodeticPosition,
+        PlatformHealth,
+        TelemetryFrame,
+        VehicleDomain,
+    )
+    from tactical_edge_gateway.egress.base import BaseEgressClient
+
+    buffer = SqliteBuffer(":memory:")
+    cb = CircuitBreaker(failure_threshold=1)
+
+    class CrashingEgress(BaseEgressClient):
+        async def start(self):
+            self._running = True
+
+        async def stop(self):
+            self._running = False
+
+        @property
+        def is_connected(self) -> bool:
+            return True
+
+        async def send_frame(self, frame):
+            raise OSError("Socket disconnected during write")
+
+        async def send_cot(self, cot_xml):
+            return True
+
+    egress = CrashingEgress("crashing")
+    engine = GatewayEngine(
+        egress_clients=[egress],
+        buffer=buffer,
+        circuit_breaker=cb,
+    )
+
+    async with engine:
+        frame = TelemetryFrame(
+            uid="crash-1",
+            callsign="CRASH-1",
+            domain=VehicleDomain.AIR,
+            position=GeodeticPosition(latitude=12.0, longitude=34.0, altitude_msl_m=100.0),
+            health=PlatformHealth(),
+        )
+        await engine._router_queue.put(frame)
+        await asyncio.sleep(0.05)
+
+        assert engine.stats.errors_count >= 1
+        assert engine.stats.frames_buffered >= 1
+        assert cb.state == CircuitState.OPEN
+
+    # Also test _replay_send_cot when client send_cot succeeds and returns True
+    class GoodEgress(BaseEgressClient):
+        async def start(self):
+            self._running = True
+
+        async def stop(self):
+            self._running = False
+
+        @property
+        def is_connected(self) -> bool:
+            return True
+
+        async def send_frame(self, frame):
+            return True
+
+        async def send_cot(self, cot_xml):
+            return True
+
+    engine2 = GatewayEngine(egress_clients=[GoodEgress("good")])
+    assert await engine2._replay_send_cot(b"<event/>") is True

@@ -57,6 +57,7 @@ class TcpEgressClient(BaseEgressClient):
         self._reader: asyncio.StreamReader | None = None
         self._queue: asyncio.Queue[bytes] = asyncio.Queue(maxsize=queue_size)
         self._worker_task: asyncio.Task[None] | None = None
+        self._rx_task: asyncio.Task[None] | None = None
 
     @property
     def is_connected(self) -> bool:
@@ -88,6 +89,10 @@ class TcpEgressClient(BaseEgressClient):
             except asyncio.CancelledError:
                 pass
             self._worker_task = None
+
+        if self._rx_task is not None:
+            self._rx_task.cancel()
+            self._rx_task = None
 
         await self._close_connection()
         logger.info("TCP egress client stopped for %s:%d", self.host, self.port)
@@ -127,6 +132,9 @@ class TcpEgressClient(BaseEgressClient):
     async def _close_connection(self) -> None:
         """Internal helper closing active stream reader/writer."""
         self._connected = False
+        if self._rx_task is not None:
+            self._rx_task.cancel()
+            self._rx_task = None
         if self._writer is not None:
             try:
                 self._writer.close()
@@ -135,6 +143,20 @@ class TcpEgressClient(BaseEgressClient):
                 logger.debug("Exception closing TCP writer: %s", e)
             self._writer = None
             self._reader = None
+
+    async def _rx_monitor(self, reader: asyncio.StreamReader) -> None:
+        """Inbound reader monitoring server connection status and detecting disconnects promptly."""
+        try:
+            while self._running and self._connected:
+                data = await reader.read(4096)
+                if not data:
+                    break
+        except Exception as e:
+            logger.debug("Rx monitor connection ended: %s", e)
+        finally:
+            if self._connected:
+                logger.info("Remote TAK Server closed connection on %s:%d", self.host, self.port)
+                self._connected = False
 
     async def _connect(self) -> bool:
         """Attempts to establish a TCP/TLS connection to the target server."""
@@ -150,6 +172,7 @@ class TcpEgressClient(BaseEgressClient):
             self._reader = reader
             self._writer = writer
             self._connected = True
+            self._rx_task = asyncio.create_task(self._rx_monitor(reader))
             logger.info("Connected TCP egress to %s:%d", self.host, self.port)
             return True
         except Exception as e:

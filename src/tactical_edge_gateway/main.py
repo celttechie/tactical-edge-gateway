@@ -145,6 +145,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Max internal buffer queue capacity before dropping stale frames (default: 1000)",
     )
 
+    # DIL Resilience & Persistent Buffering
+    buffer_group = parser.add_argument_group("DIL Resilience & Buffering")
+    buffer_group.add_argument(
+        "--buffer-path",
+        metavar="PATH",
+        help="Path to persistent SQLite WAL buffer database (e.g. 'data/buffer.db' or ':memory:')",
+    )
+    buffer_group.add_argument(
+        "--max-buffer-records",
+        type=int,
+        default=10000,
+        help="Max buffered records retained in SQLite before FIFO pruning (default: 10000)",
+    )
+    buffer_group.add_argument(
+        "--replay-rate-hz",
+        type=float,
+        default=20.0,
+        help="Burst sync replay rate in messages/sec upon link recovery (default: 20.0)",
+    )
+
     return parser
 
 
@@ -161,7 +181,19 @@ async def run_gateway(
     Returns:
         int: Exit status code (0 for success).
     """
-    engine = GatewayEngine(queue_size=args.queue_size)
+    sqlite_buffer = None
+    if getattr(args, "buffer_path", None):
+        from tactical_edge_gateway.buffer.sqlite import SqliteBuffer
+
+        logger.info("Enabling persistent SQLite buffer at %s", args.buffer_path)
+        sqlite_buffer = SqliteBuffer(db_path=args.buffer_path)
+
+    engine = GatewayEngine(
+        queue_size=args.queue_size,
+        buffer=sqlite_buffer,
+        max_buffer_records=getattr(args, "max_buffer_records", 10000),
+        replay_rate_hz=getattr(args, "replay_rate_hz", 20.0),
+    )
 
     # Configure Ingestion Adapters
     if args.mavlink:
