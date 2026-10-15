@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from tactical_edge_gateway.core.queue import EvictingQueue
 from tactical_edge_gateway.core.service import AsyncService
+from tactical_edge_gateway.core.stats import EngineStats
 
 if TYPE_CHECKING:
     from tactical_edge_gateway.buffer.circuit_breaker import CircuitBreaker
@@ -27,18 +27,6 @@ if TYPE_CHECKING:
     from tactical_edge_gateway.transform.cot import CoTTransformer
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class EngineStats:
-    """Operational telemetry routing statistics."""
-
-    frames_ingested: int = 0
-    frames_routed: int = 0
-    frames_dropped: int = 0
-    frames_buffered: int = 0
-    errors_count: int = 0
-    started_at: datetime | None = None
 
 
 class GatewayEngine(AsyncService):

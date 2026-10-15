@@ -1,6 +1,6 @@
 # Milestone 3.5: Core Abstractions Refactoring & Codebase Modularization
 
-**Status:** In Progress
+**Status:** Completed
 **Objective:** Eliminate code redundancy, standardize asynchronous service lifecycles, centralize queue backpressure primitives, and decouple gateway configuration from the CLI to ensure long-term architectural maintainability and extensibility.
 
 ---
@@ -59,9 +59,9 @@ Rather than executing a disruptive rewrite, we scheduled this refactor into **5 
 
 
 ### Stage 5: Standardized Operational Metrics (`Stats` Hierarchy)
-- [ ] Unify operational metrics under immutable Pydantic models in `src/tactical_edge_gateway/core/stats.py`.
-- [ ] Introduce formal `AdapterStats` to `BaseTelemetryAdapter`.
-- [ ] Ensure uniform JSON serialization for telemetry export (Prometheus, logging, REST).
+- [x] Unify operational metrics under Pydantic models in `src/tactical_edge_gateway/core/stats.py`.
+- [x] Introduce formal `AdapterStats` to `BaseTelemetryAdapter`.
+- [x] Ensure uniform JSON serialization for telemetry export (Prometheus, logging, REST).
 
 ---
 

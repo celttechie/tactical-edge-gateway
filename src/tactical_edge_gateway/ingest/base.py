@@ -11,6 +11,7 @@ from collections.abc import AsyncIterator
 
 from tactical_edge_gateway.core.models import TelemetryFrame
 from tactical_edge_gateway.core.service import AsyncService
+from tactical_edge_gateway.core.stats import AdapterStats
 
 
 class BaseTelemetryAdapter(AsyncService):
@@ -23,6 +24,12 @@ class BaseTelemetryAdapter(AsyncService):
             name: Human-readable identifier for logging and telemetry.
         """
         super().__init__(name=name)
+        self._stats: AdapterStats = AdapterStats()
+
+    @property
+    def stats(self) -> AdapterStats:
+        """Operational statistics for the telemetry adapter."""
+        return self._stats
 
     @abstractmethod
     async def stream(self) -> AsyncIterator[TelemetryFrame]:

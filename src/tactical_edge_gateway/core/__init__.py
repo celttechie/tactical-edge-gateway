@@ -7,7 +7,7 @@ from tactical_edge_gateway.core.config import (
     TcpEgressConfig,
     UdpEgressConfig,
 )
-from tactical_edge_gateway.core.engine import EngineStats, GatewayEngine
+from tactical_edge_gateway.core.engine import GatewayEngine
 from tactical_edge_gateway.core.models import (
     AttitudeVector,
     GeodeticPosition,
@@ -17,11 +17,14 @@ from tactical_edge_gateway.core.models import (
 )
 from tactical_edge_gateway.core.queue import EvictingQueue
 from tactical_edge_gateway.core.service import AsyncService
+from tactical_edge_gateway.core.stats import AdapterStats, EgressStats, EngineStats, StatsBase
 
 __all__ = [
+    "AdapterStats",
     "AsyncService",
     "AttitudeVector",
     "BufferConfig",
+    "EgressStats",
     "EngineStats",
     "EvictingQueue",
     "GatewayConfig",
@@ -30,6 +33,7 @@ __all__ = [
     "MavlinkConfig",
     "PlatformHealth",
     "ROS2Config",
+    "StatsBase",
     "SyntheticConfig",
     "TcpEgressConfig",
     "TelemetryFrame",

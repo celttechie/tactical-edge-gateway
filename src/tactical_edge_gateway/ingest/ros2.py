@@ -121,6 +121,10 @@ class ROS2Adapter(BaseTelemetryAdapter):
         Args:
             msg: nav_msgs/Odometry object or mock containing pose and twist.
         """
+        if msg is not None:
+            self._stats.frames_received += 1
+            self._stats.last_received_at = datetime.now(timezone.utc)
+
         try:
             # 1. Orientation quaternion -> AttitudeVector
             pose = getattr(msg, "pose", None)
@@ -152,6 +156,7 @@ class ROS2Adapter(BaseTelemetryAdapter):
                 self._current_speed_mps = math.sqrt(vx**2 + vy**2)
 
         except Exception as e:
+            self._stats.errors_count += 1
             logger.debug("Error processing ROS2 Odometry message: %s", e)
 
     def handle_nav_sat_fix(self, msg: Any) -> TelemetryFrame | None:
@@ -166,11 +171,15 @@ class ROS2Adapter(BaseTelemetryAdapter):
         if msg is None or not hasattr(msg, "latitude") or not hasattr(msg, "longitude"):
             return None
 
+        self._stats.frames_received += 1
+        self._stats.last_received_at = datetime.now(timezone.utc)
+
         try:
             # Check GPS status if present (status < 0 indicates STATUS_NO_FIX)
             status_obj = getattr(msg, "status", None)
             status_val = getattr(status_obj, "status", 0)
             if status_val < 0:
+                self._stats.frames_dropped += 1
                 logger.debug("Discarding NavSatFix with STATUS_NO_FIX (%d)", status_val)
                 return None
 
@@ -211,12 +220,15 @@ class ROS2Adapter(BaseTelemetryAdapter):
             )
 
             self._enqueue_frame(frame)
+            self._stats.frames_parsed += 1
             return frame
 
         except ValidationError as e:
+            self._stats.frames_dropped += 1
             logger.warning("Invalid coordinates in NavSatFix: %s", e)
             return None
         except Exception as e:
+            self._stats.errors_count += 1
             logger.error("Error processing ROS2 NavSatFix message: %s", e)
             return None
 
