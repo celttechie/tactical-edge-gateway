@@ -9,11 +9,12 @@ from collections.abc import Awaitable, Callable
 from tactical_edge_gateway.buffer.circuit_breaker import CircuitBreaker
 from tactical_edge_gateway.buffer.models import CircuitState
 from tactical_edge_gateway.buffer.sqlite import SqliteBuffer
+from tactical_edge_gateway.core.service import AsyncService
 
 logger = logging.getLogger(__name__)
 
 
-class StoreAndForwardWorker:
+class StoreAndForwardWorker(AsyncService):
     """Coordinates backlog replay from persistent SQLite storage to network egress."""
 
     def __init__(
@@ -38,6 +39,7 @@ class StoreAndForwardWorker:
             prune_interval: Seconds between background stale packet and FIFO pruning runs.
             max_buffer_records: Maximum records retained in SQLite before FIFO eviction.
         """
+        super().__init__(name="store-and-forward-worker")
         self.buffer = buffer
         self.circuit_breaker = circuit_breaker
         self.send_fn = send_fn
@@ -46,26 +48,16 @@ class StoreAndForwardWorker:
         self.prune_interval = max(1.0, prune_interval)
         self.max_buffer_records = max_buffer_records
 
-        self._running = False
         self._worker_task: asyncio.Task[None] | None = None
         self._total_replayed = 0
-
-    @property
-    def is_running(self) -> bool:
-        """Indicates whether the synchronization worker is actively running."""
-        return self._running
 
     @property
     def total_replayed(self) -> int:
         """Returns total count of replayed backlog messages successfully synchronized."""
         return self._total_replayed
 
-    async def start(self) -> None:
+    async def _on_start(self) -> None:
         """Starts the background backlog synchronization loop."""
-        if self._running:
-            return
-
-        self._running = True
         self._worker_task = asyncio.create_task(self._sync_loop())
         logger.info(
             "StoreAndForwardWorker started (rate=%.1f Hz, batch=%d, max_records=%d)",
@@ -74,9 +66,8 @@ class StoreAndForwardWorker:
             self.max_buffer_records,
         )
 
-    async def stop(self) -> None:
+    async def _on_stop(self) -> None:
         """Stops the synchronization worker gracefully."""
-        self._running = False
         if self._worker_task is not None:
             self._worker_task.cancel()
             try:

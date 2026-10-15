@@ -65,12 +65,8 @@ class TcpEgressClient(BaseEgressClient):
         """Indicates whether an active TCP connection to TAK Server is established."""
         return self._connected and self._writer is not None
 
-    async def start(self) -> None:
+    async def _on_start(self) -> None:
         """Initiates the background reconnection and transmission loop."""
-        if self._running:
-            return
-
-        self._running = True
         self._worker_task = asyncio.create_task(self._connection_and_tx_loop())
         logger.info(
             "TCP egress client started for %s:%d (tls=%s)",
@@ -79,10 +75,8 @@ class TcpEgressClient(BaseEgressClient):
             self.ssl_context is not None,
         )
 
-    async def stop(self) -> None:
+    async def _on_stop(self) -> None:
         """Gracefully closes TCP connection and terminates worker task."""
-        self._running = False
-
         if self._worker_task is not None:
             self._worker_task.cancel()
             try:

@@ -6,13 +6,14 @@ normalizing raw byte or message streams into canonical TelemetryFrames.
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import AsyncIterator
 
 from tactical_edge_gateway.core.models import TelemetryFrame
+from tactical_edge_gateway.core.service import AsyncService
 
 
-class BaseTelemetryAdapter(ABC):
+class BaseTelemetryAdapter(AsyncService):
     """Abstract base class for all telemetry ingest adapters."""
 
     def __init__(self, name: str) -> None:
@@ -21,21 +22,7 @@ class BaseTelemetryAdapter(ABC):
         Args:
             name: Human-readable identifier for logging and telemetry.
         """
-        self.name = name
-        self._running = False
-
-    @property
-    def is_running(self) -> bool:
-        """Indicates whether the adapter is actively ingesting."""
-        return self._running
-
-    @abstractmethod
-    async def start(self) -> None:
-        """Starts network sockets, subscriptions, or reader coroutines."""
-
-    @abstractmethod
-    async def stop(self) -> None:
-        """Gracefully halts network activity and releases bound resources."""
+        super().__init__(name=name)
 
     @abstractmethod
     async def stream(self) -> AsyncIterator[TelemetryFrame]:

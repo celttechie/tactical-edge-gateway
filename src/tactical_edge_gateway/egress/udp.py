@@ -65,11 +65,8 @@ class UdpEgressClient(BaseEgressClient):
         self._queue: EvictingQueue[bytes] = EvictingQueue(maxsize=queue_size)
         self._worker_task: asyncio.Task[None] | None = None
 
-    async def start(self) -> None:
+    async def _on_start(self) -> None:
         """Opens the UDP socket and starts the background transmitter loop."""
-        if self._running:
-            return
-
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setblocking(False)
 
@@ -91,7 +88,6 @@ class UdpEgressClient(BaseEgressClient):
             )
 
         self._socket = sock
-        self._running = True
         self._worker_task = asyncio.create_task(self._transmitter_loop())
         logger.info(
             "UDP egress client started for %s:%d (multicast=%s, broadcast=%s)",
@@ -101,10 +97,8 @@ class UdpEgressClient(BaseEgressClient):
             self.broadcast,
         )
 
-    async def stop(self) -> None:
+    async def _on_stop(self) -> None:
         """Terminates background transmitter and closes UDP socket."""
-        self._running = False
-
         if self._worker_task is not None:
             self._worker_task.cancel()
             try:

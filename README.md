@@ -62,6 +62,15 @@ flowchart TD
 
 ---
 
+## Engineering Tenets & Architectural Hygiene
+
+This codebase emphasizes technical debt vigilance and architectural rigor over unchecked feature accretion:
+* **Strategic Debt Remediation:** Following rapid multi-protocol expansion in Milestones 1–3, an intentional architectural review was conducted prior to containerization (Milestone 4). We scheduled a measured, 5-stage refactor ([Milestone 3.5](docs/milestones/milestone-3.5-core-refactoring-and-modularization.md)) to consolidate concurrency primitives into [`EvictingQueue`](docs/adr/0008-unified-queue-backpressure-and-eviction-primitives.md), unify service lifecycles via [`AsyncService`](docs/adr/0009-async-service-lifecycle-and-context-management.md), and decouple engine initialization through typed [`GatewayConfig`](docs/adr/0010-decoupled-configuration-and-engine-factory.md) models.
+* **Zero-Regression Invariant:** Every atomic refactoring stage is verified through dedicated Pull Requests maintaining **100% test coverage** across all modules, passing all pre-commit hooks, and introducing zero functional regressions.
+* **Documented Decision Rationale:** Every key design decision, inflection point, and trade-off is recorded as an Architecture Decision Record (ADR) capturing the *why*, not just the *what*.
+
+---
+
 ## Directory Structure
 
 ```text
