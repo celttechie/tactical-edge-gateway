@@ -49,8 +49,8 @@ Rather than executing a disruptive rewrite, we scheduled this refactor into **5 
 - [x] Migrate `BaseTelemetryAdapter`, `BaseEgressClient`, and `StoreAndForwardWorker` to `AsyncService`.
 
 ### Stage 3: Domain Math & Coordinate Normalization
-- [ ] Consolidate degree wrapping and pitch/roll clamping into `AttitudeVector.from_unclamped_degrees()`.
-- [ ] Remove duplicate manual coordinate bounds checks in `mavlink.py` and `ros2.py`, relying on canonical Pydantic model validation.
+- [x] Consolidate degree wrapping and pitch/roll clamping into `AttitudeVector.from_unclamped_degrees()`.
+- [x] Remove duplicate manual coordinate bounds checks in `mavlink.py` and `ros2.py`, relying on canonical Pydantic model validation.
 
 ### Stage 4: Structured Gateway Configuration & Engine Decoupling
 - [ ] Implement `GatewayConfig` Pydantic model in `src/tactical_edge_gateway/core/config.py`.
