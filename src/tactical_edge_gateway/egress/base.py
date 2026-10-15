@@ -7,22 +7,12 @@ packets to downstream C2 endpoints (ATAK, WinTAK, FreeTAKServer, TAK Server).
 from __future__ import annotations
 
 from abc import abstractmethod
-from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from tactical_edge_gateway.core.models import TelemetryFrame
 from tactical_edge_gateway.core.service import AsyncService
+from tactical_edge_gateway.core.stats import EgressStats
 from tactical_edge_gateway.transform.cot import CoTTransformer
-
-
-@dataclass
-class EgressStats:
-    """Telemetry egress operational metrics."""
-
-    packets_sent: int = 0
-    bytes_sent: int = 0
-    errors_count: int = 0
-    last_sent_at: datetime | None = None
 
 
 class BaseEgressClient(AsyncService):

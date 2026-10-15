@@ -100,6 +100,9 @@ class MavlinkAdapter(BaseTelemetryAdapter):
         if msg is None:
             return None
 
+        self._stats.frames_received += 1
+        self._stats.last_received_at = datetime.now(timezone.utc)
+
         msg_type = msg.get_type() if hasattr(msg, "get_type") else getattr(msg, "_type", None)
         if not msg_type:
             return None
@@ -221,6 +224,7 @@ class MavlinkAdapter(BaseTelemetryAdapter):
                 speed_mps=speed_mps,
             )
         except (ValidationError, ValueError) as e:
+            self._stats.frames_dropped += 1
             logger.warning(
                 "Dropping MAVLink GLOBAL_POSITION_INT with invalid coordinates: %s",
                 e,
@@ -228,6 +232,7 @@ class MavlinkAdapter(BaseTelemetryAdapter):
             return None
 
         state.position = position
+        self._stats.frames_parsed += 1
 
         frame = TelemetryFrame(
             uid=f"mavlink-{sys_id}",
@@ -260,6 +265,7 @@ class MavlinkAdapter(BaseTelemetryAdapter):
             except asyncio.CancelledError:
                 break
             except Exception as e:
+                self._stats.errors_count += 1
                 logger.error("Error in MAVLink receive loop: %s", e)
                 await asyncio.sleep(0.1)
 

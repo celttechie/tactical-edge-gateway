@@ -148,6 +148,9 @@ class SyntheticAdapter(BaseTelemetryAdapter):
         )
 
         self._iteration_count += 1
+        self._stats.frames_received += 1
+        self._stats.frames_parsed += 1
+        self._stats.last_received_at = datetime.now(timezone.utc)
         return frame
 
     async def stream(self) -> AsyncIterator[TelemetryFrame]:
