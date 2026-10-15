@@ -11,6 +11,7 @@ import asyncio
 import logging
 import ssl
 
+from tactical_edge_gateway.core.queue import EvictingQueue
 from tactical_edge_gateway.egress.base import BaseEgressClient
 from tactical_edge_gateway.transform.cot import CoTTransformer
 
@@ -55,7 +56,7 @@ class TcpEgressClient(BaseEgressClient):
         self._connected = False
         self._writer: asyncio.StreamWriter | None = None
         self._reader: asyncio.StreamReader | None = None
-        self._queue: asyncio.Queue[bytes] = asyncio.Queue(maxsize=queue_size)
+        self._queue: EvictingQueue[bytes] = EvictingQueue(maxsize=queue_size)
         self._worker_task: asyncio.Task[None] | None = None
         self._rx_task: asyncio.Task[None] | None = None
 
@@ -113,21 +114,8 @@ class TcpEgressClient(BaseEgressClient):
 
         payload = cot_xml.encode("utf-8") if isinstance(cot_xml, str) else cot_xml
 
-        try:
-            self._queue.put_nowait(payload)
-            return True
-        except asyncio.QueueFull:
-            # Evict oldest packet to maintain real-time situational awareness
-            try:
-                self._queue.get_nowait()
-            except asyncio.QueueEmpty:  # pragma: no cover
-                pass
-            try:
-                self._queue.put_nowait(payload)
-                return True
-            except asyncio.QueueFull:  # pragma: no cover
-                self._record_error()
-                return False
+        self._queue.put_nowait_evict(payload)
+        return True
 
     async def _close_connection(self) -> None:
         """Internal helper closing active stream reader/writer."""

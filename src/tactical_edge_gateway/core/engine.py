@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from tactical_edge_gateway.core.queue import EvictingQueue
+
 if TYPE_CHECKING:
     from tactical_edge_gateway.buffer.circuit_breaker import CircuitBreaker
     from tactical_edge_gateway.buffer.sqlite import SqliteBuffer
@@ -94,7 +96,7 @@ class GatewayEngine:
                     max_buffer_records=max_buffer_records,
                 )
 
-        self._router_queue: asyncio.Queue[TelemetryFrame] = asyncio.Queue(maxsize=queue_size)
+        self._router_queue: EvictingQueue[TelemetryFrame] = EvictingQueue(maxsize=queue_size)
         self._adapter_tasks: list[asyncio.Task[None]] = []
         self._router_task: asyncio.Task[None] | None = None
         self._running: bool = False
@@ -224,15 +226,8 @@ class GatewayEngine:
                     break
                 self._stats.frames_ingested += 1
 
-                # If the internal queue is full, evict the oldest to preserve low latency
-                if self._router_queue.full():
-                    try:
-                        self._router_queue.get_nowait()
-                        self._stats.frames_dropped += 1
-                    except asyncio.QueueEmpty:  # pragma: no cover
-                        pass
-
-                await self._router_queue.put(frame)
+                if self._router_queue.put_nowait_evict(frame):
+                    self._stats.frames_dropped += 1
         except asyncio.CancelledError:
             pass
         except Exception as exc:

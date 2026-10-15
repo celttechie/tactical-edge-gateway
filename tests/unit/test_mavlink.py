@@ -331,8 +331,7 @@ async def test_start_idempotency_and_owns_connection_close():
 @pytest.mark.asyncio
 async def test_queue_backpressure_eviction():
     """Verify that when queue is full, oldest frame is evicted without raising QueueFull."""
-    adapter = MavlinkAdapter()
-    adapter._queue = asyncio.Queue(maxsize=2)
+    adapter = MavlinkAdapter(queue_size=2)
 
     # Directly enqueue 2 frames
     f1 = adapter.parse_message(_create_global_position(sys_id=1, lat_deg=10.0, lon_deg=10.0))
@@ -341,17 +340,16 @@ async def test_queue_backpressure_eviction():
 
     assert f1 is not None and f2 is not None and f3 is not None
 
-    adapter._queue.put_nowait(f1)
-    adapter._queue.put_nowait(f2)
+    adapter._queue.put_nowait_evict(f1)
+    adapter._queue.put_nowait_evict(f2)
+    assert adapter._queue.qsize() == 2
+    assert adapter._queue.dropped_count == 0
 
     # Third frame should trigger backpressure eviction
-    try:
-        adapter._queue.put_nowait(f3)
-    except asyncio.QueueFull:
-        adapter._queue.get_nowait()
-        adapter._queue.put_nowait(f3)
-
+    evicted = adapter._queue.put_nowait_evict(f3)
+    assert evicted is True
     assert adapter._queue.qsize() == 2
+    assert adapter._queue.dropped_count == 1
     rem1 = adapter._queue.get_nowait()
     rem2 = adapter._queue.get_nowait()
     assert rem1.position.latitude == 20.0
@@ -404,15 +402,15 @@ async def test_read_loop_backpressure_and_error_recovery():
     # First call yields GPS msg, second raises error, third yields None
     mock_conn.recv_match.side_effect = [gps_msg, RuntimeError("Transient packet error"), None]
 
-    adapter = MavlinkAdapter(connection=mock_conn)
-    adapter._queue = asyncio.Queue(maxsize=1)
+    adapter = MavlinkAdapter(connection=mock_conn, queue_size=1)
 
-    # Pre-fill queue so put_nowait triggers QueueFull branch
+    # Pre-fill queue so put_nowait_evict triggers backpressure eviction
     existing_frame = adapter.parse_message(gps_msg)
     assert existing_frame is not None
-    adapter._queue.put_nowait(existing_frame)
+    adapter._queue.put_nowait_evict(existing_frame)
 
     assert adapter._queue.qsize() == 1
+    assert adapter._queue.dropped_count == 0
 
 
 @pytest.mark.asyncio
