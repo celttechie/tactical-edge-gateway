@@ -232,8 +232,7 @@ async def test_ros2_adapter_async_stream_and_stop():
 @pytest.mark.asyncio
 async def test_ros2_adapter_queue_backpressure_eviction():
     """Verify queue backpressure evicts oldest frame when full."""
-    adapter = ROS2Adapter()
-    adapter._queue = asyncio.Queue(maxsize=2)
+    adapter = ROS2Adapter(queue_size=2)
 
     f1 = _MockNavSatFix(latitude=30.0, longitude=-80.0)
     f2 = _MockNavSatFix(latitude=31.0, longitude=-80.0)
@@ -242,10 +241,12 @@ async def test_ros2_adapter_queue_backpressure_eviction():
     adapter.handle_nav_sat_fix(f1)
     adapter.handle_nav_sat_fix(f2)
     assert adapter._queue.qsize() == 2
+    assert adapter._queue.dropped_count == 0
 
     # Third frame triggers eviction
     adapter.handle_nav_sat_fix(f3)
     assert adapter._queue.qsize() == 2
+    assert adapter._queue.dropped_count == 1
 
     r1 = adapter._queue.get_nowait()
     r2 = adapter._queue.get_nowait()

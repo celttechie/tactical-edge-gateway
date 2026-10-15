@@ -264,9 +264,7 @@ async def test_live_udp_lifecycle_and_port_rebind():
 async def test_live_udp_burst_backpressure():
     """Verify high-rate burst over UDP drops oldest frames without queue locking."""
     port = _find_available_udp_port()
-    adapter = MavlinkAdapter(connection_string=f"udpin:127.0.0.1:{port}")
-    # Force a very small queue to test live network backpressure
-    adapter._queue = asyncio.Queue(maxsize=3)
+    adapter = MavlinkAdapter(connection_string=f"udpin:127.0.0.1:{port}", queue_size=3)
     await adapter.start()
 
     sender = mavutil.mavlink_connection(f"udpout:127.0.0.1:{port}", source_system=40)

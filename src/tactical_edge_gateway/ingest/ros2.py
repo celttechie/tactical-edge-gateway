@@ -21,6 +21,7 @@ from tactical_edge_gateway.core.models import (
     TelemetryFrame,
     VehicleDomain,
 )
+from tactical_edge_gateway.core.queue import EvictingQueue
 from tactical_edge_gateway.ingest.base import BaseTelemetryAdapter
 
 logger = logging.getLogger(__name__)
@@ -104,7 +105,7 @@ class ROS2Adapter(BaseTelemetryAdapter):
         self.odom_topic = odom_topic
         self.node_name = node_name
 
-        self._queue: asyncio.Queue[TelemetryFrame] = asyncio.Queue(maxsize=queue_size)
+        self._queue: EvictingQueue[TelemetryFrame] = EvictingQueue(maxsize=queue_size)
         self._current_attitude: AttitudeVector | None = None
         self._current_speed_mps: float | None = None
         self._current_heading_deg: float | None = None
@@ -225,14 +226,7 @@ class ROS2Adapter(BaseTelemetryAdapter):
 
     def _enqueue_frame(self, frame: TelemetryFrame) -> None:
         """Enqueues frame with FIFO backpressure protection."""
-        try:
-            self._queue.put_nowait(frame)
-        except asyncio.QueueFull:
-            try:
-                self._queue.get_nowait()
-            except asyncio.QueueEmpty:
-                pass
-            self._queue.put_nowait(frame)
+        self._queue.put_nowait_evict(frame)
 
     async def start(self) -> None:
         """Initiates ROS2 node and subscriptions if rclpy is installed."""

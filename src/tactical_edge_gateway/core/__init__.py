@@ -8,10 +8,12 @@ from tactical_edge_gateway.core.models import (
     TelemetryFrame,
     VehicleDomain,
 )
+from tactical_edge_gateway.core.queue import EvictingQueue
 
 __all__ = [
     "AttitudeVector",
     "EngineStats",
+    "EvictingQueue",
     "GatewayEngine",
     "GeodeticPosition",
     "PlatformHealth",

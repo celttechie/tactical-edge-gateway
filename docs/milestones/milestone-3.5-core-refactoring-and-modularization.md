@@ -14,15 +14,15 @@ Following the completion of Milestone 3 (DIL Mesh Resilience & Store-and-Forward
 ## Logical Execution Stages
 
 ### Stage 1: Core Concurrency & Queue Backpressure Primitive (`EvictingQueue`)
-- [ ] Implement `EvictingQueue[T](asyncio.Queue[T])` in `src/tactical_edge_gateway/core/queue.py`.
-- [ ] Centralize drop-oldest FIFO overflow handling and `dropped_count` operational metrics.
-- [ ] Refactor 5 modules to use `EvictingQueue`:
+- [x] Implement `EvictingQueue[T](asyncio.Queue[T])` in `src/tactical_edge_gateway/core/queue.py`.
+- [x] Centralize drop-oldest FIFO overflow handling and `dropped_count` operational metrics.
+- [x] Refactor 5 modules to use `EvictingQueue`:
   - `src/tactical_edge_gateway/ingest/ros2.py`
   - `src/tactical_edge_gateway/ingest/mavlink.py`
   - `src/tactical_edge_gateway/egress/tcp.py`
   - `src/tactical_edge_gateway/egress/udp.py`
   - `src/tactical_edge_gateway/core/engine.py`
-- [ ] Add unit tests in `tests/unit/test_queue.py` verifying thread-safety and bounded capacity.
+- [x] Add unit tests in `tests/unit/test_queue.py` verifying thread-safety and bounded capacity.
 
 ### Stage 2: Standardized Async Service Lifecycle (`AsyncService`)
 - [ ] Implement `AsyncService` abstract base class/mixin in `src/tactical_edge_gateway/core/service.py`.

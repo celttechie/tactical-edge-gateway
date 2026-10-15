@@ -11,6 +11,7 @@ import ipaddress
 import logging
 import socket
 
+from tactical_edge_gateway.core.queue import EvictingQueue
 from tactical_edge_gateway.egress.base import BaseEgressClient
 from tactical_edge_gateway.transform.cot import CoTTransformer
 
@@ -61,7 +62,7 @@ class UdpEgressClient(BaseEgressClient):
         self.is_multicast = _is_multicast_address(host)
 
         self._socket: socket.socket | None = None
-        self._queue: asyncio.Queue[bytes] = asyncio.Queue(maxsize=queue_size)
+        self._queue: EvictingQueue[bytes] = EvictingQueue(maxsize=queue_size)
         self._worker_task: asyncio.Task[None] | None = None
 
     async def start(self) -> None:
@@ -134,21 +135,8 @@ class UdpEgressClient(BaseEgressClient):
 
         payload = cot_xml.encode("utf-8") if isinstance(cot_xml, str) else cot_xml
 
-        try:
-            self._queue.put_nowait(payload)
-            return True
-        except asyncio.QueueFull:
-            # Evict oldest datagram to preserve real-time tactical freshness
-            try:
-                self._queue.get_nowait()
-            except asyncio.QueueEmpty:  # pragma: no cover
-                pass
-            try:
-                self._queue.put_nowait(payload)
-                return True
-            except asyncio.QueueFull:  # pragma: no cover
-                self._record_error()
-                return False
+        self._queue.put_nowait_evict(payload)
+        return True
 
     async def _transmitter_loop(self) -> None:
         """Background coroutine dequeueing and transmitting UDP datagrams."""

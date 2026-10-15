@@ -25,6 +25,7 @@ from tactical_edge_gateway.core.models import (
     TelemetryFrame,
     VehicleDomain,
 )
+from tactical_edge_gateway.core.queue import EvictingQueue
 from tactical_edge_gateway.ingest.base import BaseTelemetryAdapter
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ class MavlinkAdapter(BaseTelemetryAdapter):
         default_domain: VehicleDomain = VehicleDomain.AIR,
         *,
         connection: Any | None = None,
+        queue_size: int = 1000,
     ) -> None:
         """Initializes the MAVLink telemetry adapter.
 
@@ -67,6 +69,7 @@ class MavlinkAdapter(BaseTelemetryAdapter):
             callsign_prefix: Prefix used for tactical callsigns (e.g. UAV-01).
             default_domain: Default domain if vehicle type is not determined.
             connection: Optional pre-configured mavutil connection for dependency injection.
+            queue_size: Maximum capacity of the internal ingest queue.
         """
         super().__init__(name=f"mavlink-{connection_string}")
         self.connection_string = connection_string
@@ -75,7 +78,7 @@ class MavlinkAdapter(BaseTelemetryAdapter):
         self._connection = connection
         self._owns_connection = connection is None
         self._platform_states: dict[int, _PlatformState] = {}
-        self._queue: asyncio.Queue[TelemetryFrame] = asyncio.Queue(maxsize=1000)
+        self._queue: EvictingQueue[TelemetryFrame] = EvictingQueue(maxsize=queue_size)
         self._worker_task: asyncio.Task[None] | None = None
 
     def get_platform_state(self, sys_id: int) -> _PlatformState:
@@ -254,15 +257,7 @@ class MavlinkAdapter(BaseTelemetryAdapter):
                 if msg is not None:
                     frame = self.parse_message(msg)
                     if frame is not None:
-                        try:
-                            self._queue.put_nowait(frame)
-                        except asyncio.QueueFull:
-                            # Pop oldest frame to prevent memory exhaustion under backpressure
-                            try:
-                                self._queue.get_nowait()
-                            except asyncio.QueueEmpty:  # pragma: no cover
-                                pass
-                            self._queue.put_nowait(frame)
+                        self._queue.put_nowait_evict(frame)
                 else:
                     await asyncio.sleep(0.01)
             except asyncio.CancelledError:
