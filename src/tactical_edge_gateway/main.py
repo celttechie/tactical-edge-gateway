@@ -11,33 +11,22 @@ import asyncio
 import logging
 import signal
 import sys
+from pathlib import Path
 from typing import Sequence
 
+from tactical_edge_gateway.core.config import GatewayConfig, parse_host_port
 from tactical_edge_gateway.core.engine import GatewayEngine
-from tactical_edge_gateway.core.models import VehicleDomain
-from tactical_edge_gateway.egress.tcp import TcpEgressClient
-from tactical_edge_gateway.egress.udp import UdpEgressClient
-from tactical_edge_gateway.ingest.mavlink import MavlinkAdapter
-from tactical_edge_gateway.ingest.ros2 import ROS2Adapter
-from tactical_edge_gateway.ingest.synthetic import SyntheticAdapter
+
+__all__ = [
+    "GatewayConfig",
+    "GatewayEngine",
+    "build_parser",
+    "main",
+    "parse_host_port",
+    "run_gateway",
+]
 
 logger = logging.getLogger("tactical_edge_gateway")
-
-
-def parse_host_port(target: str, default_port: int) -> tuple[str, int]:
-    """Parses a 'host:port' string into a tuple of (host, port).
-
-    Args:
-        target: Target address in format 'host:port' or just 'host'.
-        default_port: Fallback port if not specified in target string.
-
-    Returns:
-        tuple[str, int]: Cleaned host and integer port.
-    """
-    if ":" in target:
-        host, port_str = target.rsplit(":", 1)
-        return host, int(port_str)
-    return target, default_port
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -59,6 +48,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         help="Configure log verbosity (default: INFO)",
+    )
+    parser.add_argument(
+        "--config",
+        metavar="CONFIG_FILE",
+        help="Path to YAML or JSON declarative configuration file",
     )
 
     # Ingestion Sources
@@ -169,93 +163,30 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 async def run_gateway(
-    args: argparse.Namespace,
+    args: argparse.Namespace | GatewayConfig,
     stop_event: asyncio.Event | None = None,
 ) -> int:
     """Instantiates and executes the GatewayEngine supervisor.
 
     Args:
-        args: Parsed CLI namespace arguments.
+        args: Parsed CLI namespace arguments or strongly-typed GatewayConfig.
         stop_event: Optional external shutdown event (useful for test suites).
 
     Returns:
         int: Exit status code (0 for success).
     """
-    sqlite_buffer = None
-    if getattr(args, "buffer_path", None):
-        from tactical_edge_gateway.buffer.sqlite import SqliteBuffer
+    if isinstance(args, GatewayConfig):
+        config = args
+    elif getattr(args, "config", None):
+        cfg_path = Path(args.config)
+        if cfg_path.suffix.lower() in (".yaml", ".yml"):
+            config = GatewayConfig.from_yaml_file(cfg_path)
+        else:
+            config = GatewayConfig.from_json_file(cfg_path)
+    else:
+        config = GatewayConfig.from_cli_args(args)
 
-        logger.info("Enabling persistent SQLite buffer at %s", args.buffer_path)
-        sqlite_buffer = SqliteBuffer(db_path=args.buffer_path)
-
-    engine = GatewayEngine(
-        queue_size=args.queue_size,
-        buffer=sqlite_buffer,
-        max_buffer_records=getattr(args, "max_buffer_records", 10000),
-        replay_rate_hz=getattr(args, "replay_rate_hz", 20.0),
-    )
-
-    # Configure Ingestion Adapters
-    if args.mavlink:
-        logger.info("Enabling MAVLink adapter on %s", args.mavlink)
-        engine.add_adapter(MavlinkAdapter(connection_string=args.mavlink))
-
-    if args.ros2:
-        logger.info(
-            "Enabling ROS2 adapter for %s (%s) on topics %s and %s",
-            args.ros2_callsign,
-            args.ros2_uid,
-            args.ros2_fix_topic,
-            args.ros2_odom_topic,
-        )
-        engine.add_adapter(
-            ROS2Adapter(
-                uid=args.ros2_uid,
-                callsign=args.ros2_callsign,
-                domain=VehicleDomain.GROUND,
-                fix_topic=args.ros2_fix_topic,
-                odom_topic=args.ros2_odom_topic,
-            )
-        )
-
-    # If synthetic is explicitly requested, or if no other adapters were specified, add synthetic
-    if args.synthetic or (not args.mavlink and not args.ros2):
-        domain = VehicleDomain(args.synthetic_domain)
-        logger.info(
-            "Enabling Synthetic adapter: %s (%s, domain=%s)",
-            args.synthetic_callsign,
-            args.synthetic_uid,
-            domain.value,
-        )
-        engine.add_adapter(
-            SyntheticAdapter(
-                uid=args.synthetic_uid,
-                callsign=args.synthetic_callsign,
-                domain=domain,
-            )
-        )
-
-    # Configure Egress Transports
-    has_egress = False
-    if args.tak_udp:
-        host, port = parse_host_port(args.tak_udp, default_port=4242)
-        logger.info("Enabling UDP egress to %s:%d", host, port)
-        engine.add_egress(UdpEgressClient(host=host, port=port))
-        has_egress = True
-
-    if args.tak_tcp:
-        import ssl
-
-        host, port = parse_host_port(args.tak_tcp, default_port=8087)
-        ssl_ctx = ssl.create_default_context() if args.tak_tcp_tls else None
-        logger.info("Enabling TCP streaming egress to %s:%d (tls=%s)", host, port, args.tak_tcp_tls)
-        engine.add_egress(TcpEgressClient(host=host, port=port, ssl_context=ssl_ctx))
-        has_egress = True
-
-    if not has_egress:
-        # Default to standard loopback ATAK UDP port 4242
-        logger.info("No egress target specified; defaulting to UDP 127.0.0.1:4242")
-        engine.add_egress(UdpEgressClient(host="127.0.0.1", port=4242))
+    engine = GatewayEngine.from_config(config)
 
     # Signal handling
     shutdown_event = stop_event or asyncio.Event()
