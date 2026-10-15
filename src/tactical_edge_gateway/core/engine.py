@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from tactical_edge_gateway.buffer.circuit_breaker import CircuitBreaker
     from tactical_edge_gateway.buffer.sqlite import SqliteBuffer
     from tactical_edge_gateway.buffer.sync_worker import StoreAndForwardWorker
+    from tactical_edge_gateway.core.config import GatewayConfig
     from tactical_edge_gateway.core.models import TelemetryFrame
     from tactical_edge_gateway.egress.base import BaseEgressClient
     from tactical_edge_gateway.ingest.base import BaseTelemetryAdapter
@@ -102,6 +103,105 @@ class GatewayEngine(AsyncService):
         self._adapter_tasks: list[asyncio.Task[None]] = []
         self._router_task: asyncio.Task[None] | None = None
         self._stats: EngineStats = EngineStats()
+
+    @classmethod
+    def from_config(cls, config: GatewayConfig) -> GatewayEngine:
+        """Constructs and wires a GatewayEngine from a declarative GatewayConfig.
+
+        Args:
+            config: Strongly-typed configuration schema.
+
+        Returns:
+            Fully assembled GatewayEngine instance ready to start.
+        """
+        sqlite_buffer = None
+        replay_rate_hz = 20.0
+        max_buffer_records = 10000
+
+        if config.buffer is not None:
+            from tactical_edge_gateway.buffer.sqlite import SqliteBuffer
+
+            sqlite_buffer = SqliteBuffer(db_path=config.buffer.db_path)
+            replay_rate_hz = config.buffer.replay_rate_hz
+            max_buffer_records = config.buffer.max_records
+
+        engine = cls(
+            queue_size=config.queue_size,
+            buffer=sqlite_buffer,
+            replay_rate_hz=replay_rate_hz,
+            max_buffer_records=max_buffer_records,
+        )
+
+        # Ingest Adapters
+        if config.mavlink is not None:
+            from tactical_edge_gateway.ingest.mavlink import MavlinkAdapter
+
+            engine.add_adapter(
+                MavlinkAdapter(
+                    connection_string=config.mavlink.connection_string,
+                    default_domain=config.mavlink.default_domain,
+                    callsign_prefix=config.mavlink.callsign_prefix,
+                )
+            )
+
+        if config.ros2 is not None:
+            from tactical_edge_gateway.ingest.ros2 import ROS2Adapter
+
+            engine.add_adapter(
+                ROS2Adapter(
+                    uid=config.ros2.uid,
+                    callsign=config.ros2.callsign,
+                    domain=config.ros2.domain,
+                    fix_topic=config.ros2.fix_topic,
+                    odom_topic=config.ros2.odom_topic,
+                )
+            )
+
+        if config.synthetic is not None:
+            from tactical_edge_gateway.ingest.synthetic import SyntheticAdapter
+
+            engine.add_adapter(
+                SyntheticAdapter(
+                    uid=config.synthetic.uid,
+                    callsign=config.synthetic.callsign,
+                    domain=config.synthetic.domain,
+                    altitude_msl_m=config.synthetic.altitude_msl_m,
+                    speed_mps=config.synthetic.speed_mps,
+                    rate_hz=config.synthetic.rate_hz,
+                )
+            )
+
+        # Egress Transports
+        for udp_cfg in config.udp_egress:
+            from tactical_edge_gateway.egress.udp import UdpEgressClient
+
+            engine.add_egress(
+                UdpEgressClient(
+                    host=udp_cfg.host,
+                    port=udp_cfg.port,
+                    broadcast=udp_cfg.broadcast,
+                    multicast_ttl=udp_cfg.multicast_ttl,
+                    queue_size=udp_cfg.queue_size,
+                )
+            )
+
+        for tcp_cfg in config.tcp_egress:
+            import ssl
+
+            from tactical_edge_gateway.egress.tcp import TcpEgressClient
+
+            ssl_ctx = ssl.create_default_context() if tcp_cfg.use_tls else None
+            engine.add_egress(
+                TcpEgressClient(
+                    host=tcp_cfg.host,
+                    port=tcp_cfg.port,
+                    ssl_context=ssl_ctx,
+                    reconnect_interval_s=tcp_cfg.reconnect_interval_s,
+                    queue_size=tcp_cfg.queue_size,
+                )
+            )
+
+        return engine
 
     @property
     def stats(self) -> EngineStats:

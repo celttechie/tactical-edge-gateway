@@ -53,9 +53,10 @@ Rather than executing a disruptive rewrite, we scheduled this refactor into **5 
 - [x] Remove duplicate manual coordinate bounds checks in `mavlink.py` and `ros2.py`, relying on canonical Pydantic model validation.
 
 ### Stage 4: Structured Gateway Configuration & Engine Decoupling
-- [ ] Implement `GatewayConfig` Pydantic model in `src/tactical_edge_gateway/core/config.py`.
-- [ ] Implement `GatewayEngine.from_config(config)` factory method.
-- [ ] Refactor `main.py` so CLI argument parsing maps directly to `GatewayConfig`, enabling programmatic embedding.
+- [x] Implement `GatewayConfig` Pydantic model in `src/tactical_edge_gateway/core/config.py`.
+- [x] Implement `GatewayEngine.from_config(config)` factory method.
+- [x] Refactor `main.py` so CLI argument parsing maps directly to `GatewayConfig`, enabling programmatic embedding.
+
 
 ### Stage 5: Standardized Operational Metrics (`Stats` Hierarchy)
 - [ ] Unify operational metrics under immutable Pydantic models in `src/tactical_edge_gateway/core/stats.py`.
