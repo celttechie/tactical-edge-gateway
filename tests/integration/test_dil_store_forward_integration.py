@@ -107,15 +107,16 @@ async def test_dil_store_forward_end_to_end_network_outage_and_recovery(tmp_path
 
         # 4. Phase 2: Sever Upstream Link (Network Outage / Jamming)
         server_running = False
-        server.close()
-        await server.wait_closed()
         for w in active_writers:
             try:
                 w.close()
-                await w.wait_closed()
             except Exception:
                 pass
         active_writers.clear()
+        server.close()
+        await server.wait_closed()
+        # Allow client rx_monitor to process EOF
+        await asyncio.sleep(0.05)
 
         # Send frame during outage to trip circuit breaker
         frame_outage_1 = TelemetryFrame(
@@ -153,8 +154,10 @@ async def test_dil_store_forward_end_to_end_network_outage_and_recovery(tmp_path
 
         # 5. Phase 3: Restore Upstream Network Link
         replayed_messages: list[bytes] = []
+        restored_writers: list[asyncio.StreamWriter] = []
 
         async def restored_client_cb(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+            restored_writers.append(writer)
             while True:
                 try:
                     data = await reader.read(4096)
@@ -163,8 +166,10 @@ async def test_dil_store_forward_end_to_end_network_outage_and_recovery(tmp_path
                     replayed_messages.append(data.strip())
                 except Exception:
                     break
-            writer.close()
-            await writer.wait_closed()
+            try:
+                writer.close()
+            except Exception:
+                pass
 
         restored_server = await asyncio.start_server(restored_client_cb, "127.0.0.1", port)
 
@@ -185,5 +190,11 @@ async def test_dil_store_forward_end_to_end_network_outage_and_recovery(tmp_path
             expected_uid = f"uav-buffered-0{i}".encode()
             assert any(expected_uid in msg for msg in replayed_messages)
 
-        restored_server.close()
-        await restored_server.wait_closed()
+    # Close restored server after engine stops all client connections
+    for w in restored_writers:
+        try:
+            w.close()
+        except Exception:
+            pass
+    restored_server.close()
+    await restored_server.wait_closed()
