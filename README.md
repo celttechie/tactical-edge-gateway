@@ -68,7 +68,7 @@ flowchart TD
 tactical-edge-gateway/
 ├── docs/
 │   ├── IMPLEMENTATION_PLAN.md    # Step-by-step engineering roadmap
-│   ├── adr/                      # Architecture Decision Records (ADRs 0001-0007)
+│   ├── adr/                      # Architecture Decision Records (ADRs 0001-0010)
 │   ├── milestones/               # Tracked milestones (1 through 5)
 │   └── security/                 # Threat model & deterministic key specs
 ├── packages/
@@ -131,6 +131,9 @@ make zarf-package
 | [0005](docs/adr/0005-airgap-delivery-zarf-and-container-least-privilege.md) | Air-Gap Delivery via Defense Unicorns Zarf | Accepted |
 | [0006](docs/adr/0006-deterministic-cryptographic-identities-and-ssh-key-management.md) | Deterministic Cryptographic Identities & SSH Key Management | Accepted |
 | [0007](docs/adr/0007-continuous-compliance-and-oscal-assessment-lula.md) | Continuous Compliance & OSCAL Assessment via Defense Unicorns Lula | Accepted |
+| [0008](docs/adr/0008-unified-queue-backpressure-and-eviction-primitives.md) | Unified Queue Backpressure & Eviction Primitives | Accepted |
+| [0009](docs/adr/0009-async-service-lifecycle-and-context-management.md) | Asynchronous Service Lifecycle & Context Management | Accepted |
+| [0010](docs/adr/0010-decoupled-configuration-and-engine-factory.md) | Decoupled Gateway Configuration & Engine Factory | Accepted |
 
 ---
 
