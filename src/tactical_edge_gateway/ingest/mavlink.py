@@ -275,11 +275,8 @@ class MavlinkAdapter(BaseTelemetryAdapter):
         except Exception:
             return None
 
-    async def start(self) -> None:
+    async def _on_start(self) -> None:
         """Connects to the MAVLink stream and initiates background reader."""
-        if self._running:
-            return
-
         if self._connection is None and self._owns_connection:
             logger.info("Opening MAVLink connection to %s", self.connection_string)
             self._connection = mavutil.mavlink_connection(
@@ -287,12 +284,10 @@ class MavlinkAdapter(BaseTelemetryAdapter):
                 autoreconnect=True,
             )
 
-        self._running = True
         self._worker_task = asyncio.create_task(self._read_loop())
 
-    async def stop(self) -> None:
+    async def _on_stop(self) -> None:
         """Terminates background reader and closes underlying connection."""
-        self._running = False
         if self._worker_task is not None:
             self._worker_task.cancel()
             try:

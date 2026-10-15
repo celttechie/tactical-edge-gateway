@@ -228,13 +228,8 @@ class ROS2Adapter(BaseTelemetryAdapter):
         """Enqueues frame with FIFO backpressure protection."""
         self._queue.put_nowait_evict(frame)
 
-    async def start(self) -> None:
+    async def _on_start(self) -> None:
         """Initiates ROS2 node and subscriptions if rclpy is installed."""
-        if self._running:
-            return
-
-        self._running = True
-
         if RCLPY_AVAILABLE and rclpy is not None:
             try:
                 if not rclpy.ok():
@@ -277,9 +272,8 @@ class ROS2Adapter(BaseTelemetryAdapter):
                 self.name,
             )
 
-    async def stop(self) -> None:
+    async def _on_stop(self) -> None:
         """Shuts down active ROS2 node and worker task."""
-        self._running = False
 
         if self._node is not None:
             try:

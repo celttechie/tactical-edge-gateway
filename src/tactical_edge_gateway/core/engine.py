@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from tactical_edge_gateway.core.queue import EvictingQueue
+from tactical_edge_gateway.core.service import AsyncService
 
 if TYPE_CHECKING:
     from tactical_edge_gateway.buffer.circuit_breaker import CircuitBreaker
@@ -39,7 +40,7 @@ class EngineStats:
     started_at: datetime | None = None
 
 
-class GatewayEngine:
+class GatewayEngine(AsyncService):
     """Asynchronous orchestrator routing telemetry from Ingest to Egress transports."""
 
     def __init__(
@@ -67,6 +68,7 @@ class GatewayEngine:
             max_buffer_records: Maximum records preserved in SQLite buffer before FIFO pruning.
             transformer: Optional CoTTransformer instance for XML serialization.
         """
+        super().__init__(name="gateway-engine")
         self.adapters: list[BaseTelemetryAdapter] = list(adapters or [])
         self.egress_clients: list[BaseEgressClient] = list(egress_clients or [])
         self.queue_size: int = queue_size
@@ -99,13 +101,7 @@ class GatewayEngine:
         self._router_queue: EvictingQueue[TelemetryFrame] = EvictingQueue(maxsize=queue_size)
         self._adapter_tasks: list[asyncio.Task[None]] = []
         self._router_task: asyncio.Task[None] | None = None
-        self._running: bool = False
         self._stats: EngineStats = EngineStats()
-
-    @property
-    def is_running(self) -> bool:
-        """Indicates whether the gateway engine is actively executing."""
-        return self._running
 
     @property
     def stats(self) -> EngineStats:
@@ -122,12 +118,8 @@ class GatewayEngine:
         if client not in self.egress_clients:
             self.egress_clients.append(client)
 
-    async def start(self) -> None:
+    async def _on_start(self) -> None:
         """Starts all egress clients, ingest adapters, and internal router tasks."""
-        if self._running:
-            return
-
-        self._running = True
         self._stats.started_at = datetime.now(timezone.utc)
         logger.info(
             "Starting GatewayEngine with %d adapters and %d egress clients",
@@ -170,12 +162,8 @@ class GatewayEngine:
         if self.sync_worker is not None:
             await self.sync_worker.start()
 
-    async def stop(self) -> None:
+    async def _on_stop(self) -> None:
         """Gracefully shuts down all workers, adapters, buffer, and egress connections."""
-        if not self._running:
-            return
-
-        self._running = False
         logger.info("Stopping GatewayEngine...")
 
         # 1. Stop sync worker first so replay halts cleanly
@@ -309,12 +297,3 @@ class GatewayEngine:
                             logger.debug("Egress transmission error: %s", res)
                             self._stats.errors_count += 1
             self._stats.frames_routed += 1
-
-    async def __aenter__(self) -> GatewayEngine:
-        """Async context manager entry."""
-        await self.start()
-        return self
-
-    async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
-        """Async context manager exit."""
-        await self.stop()

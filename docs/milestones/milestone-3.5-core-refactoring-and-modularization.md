@@ -25,10 +25,10 @@ Following the completion of Milestone 3 (DIL Mesh Resilience & Store-and-Forward
 - [x] Add unit tests in `tests/unit/test_queue.py` verifying thread-safety and bounded capacity.
 
 ### Stage 2: Standardized Async Service Lifecycle (`AsyncService`)
-- [ ] Implement `AsyncService` abstract base class/mixin in `src/tactical_edge_gateway/core/service.py`.
-- [ ] Standardize state management (`is_running`, `_running`, start/stop idempotency guards).
-- [ ] Provide uniform asynchronous context manager (`async with`) support across all services.
-- [ ] Migrate `BaseTelemetryAdapter`, `BaseEgressClient`, and `StoreAndForwardWorker` to `AsyncService`.
+- [x] Implement `AsyncService` abstract base class/mixin in `src/tactical_edge_gateway/core/service.py`.
+- [x] Standardize state management (`is_running`, `_running`, start/stop idempotency guards).
+- [x] Provide uniform asynchronous context manager (`async with`) support across all services.
+- [x] Migrate `BaseTelemetryAdapter`, `BaseEgressClient`, and `StoreAndForwardWorker` to `AsyncService`.
 
 ### Stage 3: Domain Math & Coordinate Normalization
 - [ ] Consolidate degree wrapping and pitch/roll clamping into `AttitudeVector.from_unclamped_degrees()`.

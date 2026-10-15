@@ -71,14 +71,6 @@ class SyntheticAdapter(BaseTelemetryAdapter):
         self._iteration_count = 0
         self._battery_pct = 100.0
 
-    async def start(self) -> None:
-        """Arms and activates the synthetic generator."""
-        self._running = True
-
-    async def stop(self) -> None:
-        """Deactivates generator streaming."""
-        self._running = False
-
     def next_frame(self) -> TelemetryFrame:
         """Computes the next deterministic kinematic frame along the trajectory.
 

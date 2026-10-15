@@ -6,11 +6,12 @@ packets to downstream C2 endpoints (ATAK, WinTAK, FreeTAKServer, TAK Server).
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from tactical_edge_gateway.core.models import TelemetryFrame
+from tactical_edge_gateway.core.service import AsyncService
 from tactical_edge_gateway.transform.cot import CoTTransformer
 
 
@@ -24,7 +25,7 @@ class EgressStats:
     last_sent_at: datetime | None = None
 
 
-class BaseEgressClient(ABC):
+class BaseEgressClient(AsyncService):
     """Abstract base class for all C2 network egress clients."""
 
     def __init__(
@@ -38,15 +39,9 @@ class BaseEgressClient(ABC):
             name: Human-readable identifier for logging and monitoring.
             transformer: Optional CoTTransformer instance for frame-to-XML conversion.
         """
-        self.name = name
+        super().__init__(name=name)
         self.transformer = transformer or CoTTransformer()
-        self._running = False
         self._stats = EgressStats()
-
-    @property
-    def is_running(self) -> bool:
-        """Indicates whether the egress client is actively running."""
-        return self._running
 
     @property
     def is_connected(self) -> bool:
@@ -57,14 +52,6 @@ class BaseEgressClient(ABC):
     def stats(self) -> EgressStats:
         """Current operational egress telemetry statistics."""
         return self._stats
-
-    @abstractmethod
-    async def start(self) -> None:
-        """Starts background tasks, socket bindings, or connection loops."""
-
-    @abstractmethod
-    async def stop(self) -> None:
-        """Gracefully shuts down network connections and worker tasks."""
 
     @abstractmethod
     async def send_cot(self, cot_xml: str | bytes) -> bool:
