@@ -7,7 +7,7 @@
 [![Compliance](https://img.shields.io/badge/Compliance-Defense%20Unicorns%20Lula-teal.svg)](docs/adr/0007-continuous-compliance-and-oscal-assessment-lula.md)
 [![Security](https://img.shields.io/badge/Identity-Deterministic%20Ed25519-purple.svg)](scripts/generate-deterministic-keys.py)
 
-An air-gapped, resilient tactical telemetry gateway bridging heterogeneous autonomy and unmanned systems data streams (**MAVLink**, **ROS2 / DDS**, and **NetworkTables 4 / RobotPy**) to military Command and Control (C2) situational awareness tools (**Cursor on Target / TAK Server**) over contested, disconnected (DIL) tactical radio links.
+An air-gapped, resilient tactical telemetry gateway bridging heterogeneous autonomy and unmanned systems data streams (**MAVLink** and **ROS2 / DDS**) to military Command and Control (C2) situational awareness tools (**Cursor on Target / TAK Server**) over contested, disconnected (DIL) tactical radio links.
 
 ---
 
@@ -19,7 +19,7 @@ flowchart TD
         direction TB
         subgraph AutonomySources["Heterogeneous Autonomy Telemetry"]
             UAV["Air Autonomy\n(MAVLink / PX4 / UDP 14550)"]
-            UGV["Ground Robotics\n(ROS2 / DDS / RobotPy NT4)"]
+            UGV["Ground Robotics\n(ROS2 / DDS)"]
         end
 
         Gateway["Tactical Edge Gateway Engine\n(Telemetry Normalization & Router)"]
@@ -53,7 +53,7 @@ flowchart TD
 1. **Multi-Protocol Autonomy Ingestion:**
    * **MAVLink (UAS/Drones):** Ingests binary MAVLink streams (`HEARTBEAT`, `GLOBAL_POSITION_INT`, `ATTITUDE`, `SYS_STATUS`) over UDP port 14550 via `pymavlink`.
    * **ROS2 / DDS (UGV/Robotics):** Decoupled subscriber adapters for ROS2 `sensor_msgs/NavSatFix` and `nav_msgs/Odometry`.
-   * **NetworkTables 4 (Edge Coprocessors):** Subscribes to RobotPy / WPILib NT4 streams for high-rate sensor/vision payloads.
+   * **Synthetic Telemetry (Edge Simulator):** Generates deterministic flight and ground waypoint navigation tracks for offline headless validation and CI.
 2. **Cursor on Target (CoT) & MIL-STD Symbology:** Maps multi-domain autonomy telemetry into compliant MITRE Cursor on Target (CoT) XML events, distinguishing airborne drones (`a-f-A-M-F`) from ground vehicles (`a-f-G-E-V-U`).
 3. **DIL (Disconnected, Intermittent, Limited) Resilience:** Implements an embedded store-and-forward SQLite buffer that queues telemetry during radio outages and bursts historical breadcrumbs at a throttled rate upon link recovery.
 4. **Declarative Air-Gap Packaging (Zarf):** Bundles all gateway layers, configuration manifests, and server containers into an offline Defense Unicorns **Zarf package** for zero-internet tactical deployments.
@@ -125,7 +125,7 @@ make zarf-package
 | ADR | Title | Status |
 | :--- | :--- | :--- |
 | [0001](docs/adr/0001-record-architecture-decisions.md) | Record Architecture Decisions | Accepted |
-| [0002](docs/adr/0002-pubsub-telemetry-ingestion-nt4-mavlink.md) | Multi-Protocol Autonomy Ingestion (MAVLink, ROS2/DDS, and NetworkTables) | Accepted |
+| [0002](docs/adr/0002-pubsub-telemetry-ingestion-nt4-mavlink.md) | Multi-Protocol Autonomy Ingestion (MAVLink and ROS2/DDS) | Accepted |
 | [0003](docs/adr/0003-cursor-on-target-cot-xml-translation.md) | Cursor on Target (CoT) XML Translation & Schema Validation | Accepted |
 | [0004](docs/adr/0004-disconnected-store-and-forward-crdt-buffering.md) | DIL Store-and-Forward Edge Buffering | Accepted |
 | [0005](docs/adr/0005-airgap-delivery-zarf-and-container-least-privilege.md) | Air-Gap Delivery via Defense Unicorns Zarf | Accepted |

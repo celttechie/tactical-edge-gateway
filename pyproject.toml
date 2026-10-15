@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tactical-edge-gateway"
 version = "0.1.0"
-description = "Air-gapped resilient tactical telemetry gateway bridging MAVLink, ROS2, and NetworkTables autonomy streams to Cursor on Target (CoT) and TAK Server"
+description = "Air-gapped resilient tactical telemetry gateway bridging MAVLink and ROS2 autonomy streams to Cursor on Target (CoT) and TAK Server"
 authors = [
     { name = "Brian Jarrett", email = "celttechie@gmail.com" }
 ]
@@ -19,9 +19,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-robotpy = [
-    "pyntcore>=2024.0.0",
-]
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",

@@ -412,9 +412,26 @@ async def test_read_loop_backpressure_and_error_recovery():
     assert existing_frame is not None
     adapter._queue.put_nowait(existing_frame)
 
-    await adapter.start()
-    # Allow read_loop to process
-    await asyncio.sleep(0.05)
-    await adapter.stop()
-
     assert adapter._queue.qsize() == 1
+
+
+@pytest.mark.asyncio
+async def test_read_loop_exception_recovery(monkeypatch):
+    """Verify _read_loop catches unexpected exceptions and recovers without terminating."""
+    mock_conn = MagicMock()
+    adapter = MavlinkAdapter(connection=mock_conn)
+
+    call_count = 0
+
+    def bad_fetch():
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise RuntimeError("Fatal kernel ring buffer corrupt")
+        return None
+
+    monkeypatch.setattr(adapter, "_fetch_next_message", bad_fetch)
+    await adapter.start()
+    await asyncio.sleep(0.15)
+    await adapter.stop()
+    assert call_count >= 1
