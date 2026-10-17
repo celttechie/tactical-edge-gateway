@@ -18,10 +18,23 @@ spec:
         app.kubernetes.io/name: freetakserver
         app.kubernetes.io/part-of: tactical-edge-gateway
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: freetakserver
           image: ghcr.io/freetakteam/freetakserver:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           ports:
             - name: cot-tcp
               containerPort: 8087
@@ -35,6 +48,8 @@ spec:
           volumeMounts:
             - name: fts-data
               mountPath: /opt/fts/data
+            - name: tmp-volume
+              mountPath: /tmp
           resources:
             requests:
               cpu: "200m"
@@ -44,4 +59,6 @@ spec:
               memory: "1Gi"
       volumes:
         - name: fts-data
+          emptyDir: {}
+        - name: tmp-volume
           emptyDir: {}
