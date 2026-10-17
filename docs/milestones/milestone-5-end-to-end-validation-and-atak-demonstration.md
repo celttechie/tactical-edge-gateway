@@ -1,7 +1,8 @@
 # Milestone 5: End-to-End Validation & ATAK Demonstration
 
-**Status:** Planned
+**Status:** In Progress
 **Objective:** Execute full-loop validation demonstrating autonomous robotics telemetry flowing across a simulated lossy radio link to live ATAK displays.
+
 
 ## Key Deliverables
 - [ ] End-to-end integration test harness simulating:

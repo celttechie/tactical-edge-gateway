@@ -41,8 +41,8 @@
 ---
 
 ## Acceptance Criteria
-1. `GatewayConfig` seamlessly overrides configuration values from `TEG_*` environment variables and `.env` files.
-2. Container image builds successfully, executes as non-root user `10001`, and passes security vulnerability scanning (`trivy`).
-3. Zarf produces a self-contained, reproducible `.tar.zst` air-gap package file.
-4. `lula validate` executes cleanly against live deployment, producing audit-ready OSCAL compliance output.
-5. Deploying the package on an air-gapped host bootstraps the entire tactical stack without external internet requests.
+- [x] 1. `GatewayConfig` seamlessly overrides configuration values from `TEG_*` environment variables and `.env` files.
+- [x] 2. Container image builds successfully, executes as non-root user `10001`, and passes security vulnerability scanning (`trivy`).
+- [x] 3. Zarf produces a self-contained, reproducible `.tar.zst` air-gap package file.
+- [x] 4. `lula validate` executes cleanly against live deployment, producing audit-ready OSCAL compliance output.
+- [x] 5. Deploying the package on an air-gapped host bootstraps the entire tactical stack without external internet requests.
