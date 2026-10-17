@@ -9,7 +9,7 @@ VENV ?= .venv
 PYTHON ?= $(VENV)/bin/python3
 PIP ?= $(VENV)/bin/pip
 
-.PHONY: help venv install dev-install lint format test security pre-commit pre-commit-install clean keys docker-build zarf-package lula-lint lula-validate
+.PHONY: help venv install dev-install lint format test security pre-commit pre-commit-install clean keys docker-build zarf-package lula-lint lula-validate demo
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -81,6 +81,9 @@ lula-lint: ## Lint OSCAL Component Definition against upstream schema
 
 lula-validate: ## Run automated Lula OSCAL compliance assessment
 	@./scripts/validate-lula-compliance.sh
+
+demo: venv ## Run interactive end-to-end mission simulation with simulated RF blackout
+	$(PYTHON) scripts/run-e2e-simulation.py $(ARGS)
 
 clean: ## Clean build, test, and temporary cache artifacts
 	rm -rf build/ dist/ *.egg-info .pytest_cache/ .coverage htmlcov/

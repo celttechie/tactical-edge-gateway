@@ -81,12 +81,15 @@ tactical-edge-gateway/
 ├── docs/
 │   ├── IMPLEMENTATION_PLAN.md    # Step-by-step engineering roadmap
 │   ├── adr/                      # Architecture Decision Records (ADRs 0001-0010)
-│   ├── milestones/               # Tracked milestones (1 through 5)
+│   ├── milestones/               # Project milestones (1 through 5)
+│   ├── operations/               # ATAK connectivity guide & demonstration runbook
 │   └── security/                 # Threat model & deterministic key specs
 ├── packages/
+│   ├── atak/                     # ATAK-CIV / WinTAK mission package & .pref files
 │   └── zarf/                     # Air-gap Zarf package definition (zarf.yaml) & K8s manifests
 ├── scripts/
 │   ├── generate-deterministic-keys.py  # HKDF-SHA256 Ed25519 generator
+│   ├── run-e2e-simulation.py           # Interactive mission simulation harness
 │   ├── setup-ssh.sh                    # Host config & SSH onboarding
 │   ├── validate-lula-compliance.sh     # Automated OSCAL compliance validator
 │   └── verify-airgap-package.sh        # Air-gap package verification script
@@ -94,7 +97,7 @@ tactical-edge-gateway/
 │   └── tactical_edge_gateway/    # Core Python application modules
 ├── tests/
 │   ├── unit/                     # Unit test suites
-│   └── integration/              # End-to-end integration tests (Zarf, container, Lula)
+│   └── integration/              # End-to-end integration tests (Zarf, container, Lula, DIL)
 ├── lula.yaml                     # Root symlink to compliance/lula/oscal-component.yaml
 ├── Makefile                      # Build, test, and automation commands
 ├── pyproject.toml                # Project metadata and dependencies
@@ -139,6 +142,25 @@ make zarf-package
 make lula-lint
 make lula-validate
 ```
+
+### 6. Interactive End-to-End Mission Demonstration
+```bash
+# Run multi-vehicle autonomous mission with simulated contested RF blackout
+make demo
+```
+
+---
+
+## Project Milestones & Verification
+
+| Milestone | Scope & Key Capabilities | Status |
+| :--- | :--- | :--- |
+| **[Milestone 1](docs/milestones/milestone-1-mavlink-ingestion-and-synthetic-testbed.md)** | Multi-protocol ingestion (MAVLink 2.0 & synthetic kinematics generator) | Completed |
+| **[Milestone 2](docs/milestones/milestone-2-ros2-dds-ingestion-and-cot-translation.md)** | ROS2/DDS ingestion, MIL-STD-2525 CoT transformation & egress | Completed |
+| **[Milestone 3](docs/milestones/milestone-3-dil-network-resilience-and-edge-buffering.md)** | DIL resilience, SQLite WAL buffer & circuit breaker | Completed |
+| **[Milestone 3.5](docs/milestones/milestone-3.5-core-refactoring-and-modularization.md)** | Core architecture refactor (`EvictingQueue`, `AsyncService`, `GatewayConfig`) | Completed |
+| **[Milestone 4](docs/milestones/milestone-4-containerization-and-zarf-airgap-bundle.md)** | 12-factor config, rootless container, Zarf air-gap & Lula OSCAL compliance | Completed |
+| **[Milestone 5](docs/milestones/milestone-5-end-to-end-validation-and-atak-demonstration.md)** | Full-loop DIL integration harness, ATAK-CIV mission package & demonstration runbook | Completed |
 
 ---
 
