@@ -1,0 +1,34 @@
+kind: ZarfPackageConfig
+metadata:
+  name: tactical-edge-gateway
+  description: "Air-gapped tactical telemetry gateway and FreeTAKServer tactical stack"
+  version: "0.1.0"
+  architecture: "amd64"
+
+components:
+  - name: tactical-edge-gateway
+    required: true
+    description: "DISA STIG-compliant rootless telemetry gateway bridging MAVLink and ROS2 to CoT"
+    images:
+      - tactical-edge-gateway:latest
+    manifests:
+      - name: gateway-manifests
+        namespace: tactical-edge
+        files:
+          - manifests/namespace.yaml
+          - manifests/gateway-configmap.yaml
+          - manifests/gateway-deployment.yaml
+          - manifests/gateway-service.yaml
+
+  - name: freetakserver
+    required: false
+    default: true
+    description: "FreeTAKServer standalone tactical C2 backend"
+    images:
+      - ghcr.io/freetakteam/freetakserver:latest
+    manifests:
+      - name: fts-manifests
+        namespace: tactical-edge
+        files:
+          - manifests/fts-deployment.yaml
+          - manifests/fts-service.yaml

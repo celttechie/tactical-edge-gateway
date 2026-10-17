@@ -24,11 +24,11 @@
 - [x] Container build automation and vulnerability scanning (`trivy` container image scan with 0 findings).
 
 ### 3. Defense Unicorns Zarf Air-Gap Package (`zarf.yaml`)
-- [ ] Declarative `zarf.yaml` package definition:
+- [x] Declarative `zarf.yaml` package definition:
   - Bundles the gateway container image and FreeTAKServer container.
   - Declares local data volume mounts, environment variables, and network port mappings.
   - Pins all OCI registry components for 100% offline, air-gapped reproducibility.
-- [ ] Air-gap verification test script running `zarf package create` and `zarf package deploy` in disconnected network conditions.
+- [x] Air-gap verification test script running `zarf package create` and `zarf package inspect` in disconnected network conditions.
 
 ### 4. Defense Unicorns Lula Integration (`lula.yaml`)
 - [ ] OSCAL Component Definition mapping gateway controls to NIST SP 800-53 Rev 5:

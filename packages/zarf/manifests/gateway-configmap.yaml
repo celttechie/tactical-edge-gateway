@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+  namespace: tactical-edge
+  labels:
+    app.kubernetes.io/name: tactical-edge-gateway
+    app.kubernetes.io/part-of: tactical-edge-gateway
+data:
+  TEG_LOG_LEVEL: "INFO"
+  TEG_QUEUE_SIZE: "1000"
+  TEG_BUFFER__DB_PATH: "/data/buffer.db"
+  TEG_BUFFER__MAX_RECORDS: "10000"
+  TEG_BUFFER__REPLAY_RATE_HZ: "20.0"
+  TEG_SYNTHETIC__UID: "synth-01"
+  TEG_SYNTHETIC__CALLSIGN: "VIPER-SYNTH"
+  TEG_SYNTHETIC__RATE_HZ: "10.0"
+  TEG_TCP_EGRESS: '[{"host": "freetakserver", "port": 8087, "use_tls": false}]'
+  TEG_UDP_EGRESS: '[{"host": "239.2.3.1", "port": 6969, "broadcast": false}]'

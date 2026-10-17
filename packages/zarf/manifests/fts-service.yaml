@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: freetakserver
+  namespace: tactical-edge
+  labels:
+    app.kubernetes.io/name: freetakserver
+    app.kubernetes.io/part-of: tactical-edge-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: freetakserver
+  ports:
+    - name: cot-tcp
+      port: 8087
+      targetPort: 8087
+      protocol: TCP
+    - name: cot-tls
+      port: 8089
+      targetPort: 8089
+      protocol: TCP
+    - name: fts-rest
+      port: 19023
+      targetPort: 19023
+      protocol: TCP
