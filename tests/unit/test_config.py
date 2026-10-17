@@ -313,3 +313,73 @@ async def test_run_gateway_with_yaml_config_cli_flag(tmp_path: Path):
     await task
 
     assert exit_code == 0
+
+
+def test_gateway_config_from_env_vars(monkeypatch: pytest.MonkeyPatch):
+    """Verify GatewayConfig automatically parses TEG_* environment variables."""
+    monkeypatch.setenv("TEG_QUEUE_SIZE", "2500")
+    monkeypatch.setenv("TEG_MAVLINK__CONNECTION_STRING", "udpin:0.0.0.0:14555")
+    monkeypatch.setenv("TEG_MAVLINK__CALLSIGN_PREFIX", "SKYEYE")
+    monkeypatch.setenv("TEG_BUFFER__DB_PATH", "/data/edge_buffer.db")
+    monkeypatch.setenv("TEG_BUFFER__MAX_RECORDS", "50000")
+    monkeypatch.setenv("TEG_BUFFER__REPLAY_RATE_HZ", "40.0")
+
+    config = GatewayConfig()
+
+    assert config.queue_size == 2500
+    assert config.mavlink is not None
+    assert config.mavlink.connection_string == "udpin:0.0.0.0:14555"
+    assert config.mavlink.callsign_prefix == "SKYEYE"
+    assert config.buffer is not None
+    assert config.buffer.db_path == "/data/edge_buffer.db"
+    assert config.buffer.max_records == 50000
+    assert config.buffer.replay_rate_hz == 40.0
+
+
+def test_gateway_config_nested_env_vars(monkeypatch: pytest.MonkeyPatch):
+    """Verify nested submodels for ROS2 and Synthetic are constructed from TEG_* env vars."""
+    monkeypatch.setenv("TEG_ROS2__UID", "ugv-swarm-99")
+    monkeypatch.setenv("TEG_ROS2__CALLSIGN", "SWARM-LEAD")
+    monkeypatch.setenv("TEG_SYNTHETIC__UID", "drone-synth-42")
+    monkeypatch.setenv("TEG_SYNTHETIC__CALLSIGN", "PHANTOM-42")
+    monkeypatch.setenv("TEG_SYNTHETIC__ALTITUDE_MSL_M", "350.5")
+    monkeypatch.setenv("TEG_SYNTHETIC__SPEED_MPS", "22.5")
+
+    config = GatewayConfig()
+
+    assert config.ros2 is not None
+    assert config.ros2.uid == "ugv-swarm-99"
+    assert config.ros2.callsign == "SWARM-LEAD"
+    assert config.synthetic is not None
+    assert config.synthetic.uid == "drone-synth-42"
+    assert config.synthetic.callsign == "PHANTOM-42"
+    assert config.synthetic.altitude_msl_m == 350.5
+    assert config.synthetic.speed_mps == 22.5
+
+
+def test_gateway_config_dotenv_file(tmp_path: Path):
+    """Verify GatewayConfig loads values from a specified .env file."""
+    dotenv_file = tmp_path / ".env"
+    dotenv_file.write_text(
+        "TEG_QUEUE_SIZE=3000\n"
+        "TEG_BUFFER__DB_PATH=/dotenv/buffer.db\n"
+        "TEG_BUFFER__MAX_RECORDS=20000\n",
+        encoding="utf-8",
+    )
+
+    config = GatewayConfig(_env_file=dotenv_file)
+
+    assert config.queue_size == 3000
+    assert config.buffer is not None
+    assert config.buffer.db_path == "/dotenv/buffer.db"
+    assert config.buffer.max_records == 20000
+
+
+def test_gateway_config_override_precedence(monkeypatch: pytest.MonkeyPatch):
+    """Verify explicit keyword arguments override TEG_* environment variables."""
+    monkeypatch.setenv("TEG_QUEUE_SIZE", "4000")
+
+    # Explicit kwarg takes priority over environment variable
+    config = GatewayConfig(queue_size=5000)
+
+    assert config.queue_size == 5000

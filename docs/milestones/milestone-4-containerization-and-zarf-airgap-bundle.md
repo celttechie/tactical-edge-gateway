@@ -8,12 +8,12 @@
 ## Key Deliverables & Execution Plan
 
 ### 1. 12-Factor Configuration via `pydantic-settings`
-- [ ] Add `pydantic-settings>=2.0.0` dependency to `pyproject.toml`.
-- [ ] Upgrade `GatewayConfig` from `pydantic.BaseModel` to `pydantic_settings.BaseSettings`:
+- [x] Add `pydantic-settings>=2.0.0` dependency to `pyproject.toml`.
+- [x] Upgrade `GatewayConfig` from `pydantic.BaseModel` to `pydantic_settings.BaseSettings`:
   - Support automatic environment variable parsing with prefix `TEG_` and nested delimiter `__` (e.g., `TEG_EGRESS__HOST=192.168.1.50`, `TEG_BUFFER__DB_PATH=/data/buffer.db`).
   - Support optional `.env` file loading for local development and container testing.
   - Implement deterministic configuration hierarchy: **CLI Flags > Environment Variables > Config File (YAML/JSON) > Defaults**.
-- [ ] Add comprehensive unit tests in `tests/unit/test_config.py` verifying environment variable inheritance and `.env` parsing.
+- [x] Add comprehensive unit tests in `tests/unit/test_config.py` verifying environment variable inheritance and `.env` parsing.
 
 ### 2. DISA STIG-Compliant Rootless Containerization
 - [ ] Multi-stage Dockerfile adhering to DISA Container Hardening STIG guidelines:

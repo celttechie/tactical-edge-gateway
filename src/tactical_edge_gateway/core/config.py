@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from tactical_edge_gateway.core.models import VehicleDomain
 
@@ -198,10 +199,17 @@ class BufferConfig(BaseModel):
     )
 
 
-class GatewayConfig(BaseModel):
+class GatewayConfig(BaseSettings):
     """Root configuration schema for Tactical Edge Gateway."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = SettingsConfigDict(
+        frozen=True,
+        extra="forbid",
+        env_prefix="TEG_",
+        env_nested_delimiter="__",
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
 
     queue_size: int = Field(
         default=1000,
