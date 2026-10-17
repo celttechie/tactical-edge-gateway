@@ -25,3 +25,6 @@ This coupling caused:
 - Complete decoupling of core gateway orchestration from command-line interfaces.
 - Seamless programmatic integration and automated testing.
 - Ready support for future configuration files (e.g. Zarf-templated YAML configs in Milestone 4).
+
+## Amendment (Milestone 4 - 2026-10-17)
+To support 12-factor containerization and Kubernetes deployment patterns in Milestone 4, `GatewayConfig` is upgraded to subclass `pydantic_settings.BaseSettings` (`pydantic-settings`). This enables automatic environment variable mapping (`TEG_*`) with nested property delimiters (`__`), `.env` file parsing, and deterministic hierarchy resolution (CLI flags > environment variables > YAML/JSON files > defaults) without custom parsing boilerplate.

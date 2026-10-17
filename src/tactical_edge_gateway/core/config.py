@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from tactical_edge_gateway.core.models import VehicleDomain
 
@@ -198,10 +199,17 @@ class BufferConfig(BaseModel):
     )
 
 
-class GatewayConfig(BaseModel):
+class GatewayConfig(BaseSettings):
     """Root configuration schema for Tactical Edge Gateway."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = SettingsConfigDict(
+        frozen=True,
+        extra="forbid",
+        env_prefix="TEG_",
+        env_nested_delimiter="__",
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
 
     queue_size: int = Field(
         default=1000,
@@ -287,23 +295,27 @@ class GatewayConfig(BaseModel):
     def from_cli_args(cls, args: argparse.Namespace) -> GatewayConfig:
         """Translates CLI parsed arguments into a structured GatewayConfig.
 
+        Omitted CLI options fall back to environment variables (TEG_*), .env files,
+        or schema defaults.
+
         Args:
             args: Parsed CLI namespace arguments.
 
         Returns:
             Validated GatewayConfig instance.
         """
-        queue_size = getattr(args, "queue_size", 1000)
+        init_kwargs: dict[str, Any] = {}
+
+        if getattr(args, "queue_size", None) is not None:
+            init_kwargs["queue_size"] = args.queue_size
 
         # Ingestion sources
-        mavlink_cfg: MavlinkConfig | None = None
         mav_conn = getattr(args, "mavlink", None)
         if mav_conn:
-            mavlink_cfg = MavlinkConfig(connection_string=mav_conn)
+            init_kwargs["mavlink"] = MavlinkConfig(connection_string=mav_conn)
 
-        ros2_cfg: ROS2Config | None = None
         if getattr(args, "ros2", False):
-            ros2_cfg = ROS2Config(
+            init_kwargs["ros2"] = ROS2Config(
                 uid=getattr(args, "ros2_uid", "ugv-ros2-01"),
                 callsign=getattr(args, "ros2_callsign", "ROVER-ALPHA"),
                 domain=VehicleDomain.GROUND,
@@ -311,11 +323,10 @@ class GatewayConfig(BaseModel):
                 odom_topic=getattr(args, "ros2_odom_topic", "/odom"),
             )
 
-        synth_cfg: SyntheticConfig | None = None
-        if getattr(args, "synthetic", False) or (not mavlink_cfg and not ros2_cfg):
+        if getattr(args, "synthetic", False):
             raw_domain = getattr(args, "synthetic_domain", "air")
             synth_domain = VehicleDomain(raw_domain) if isinstance(raw_domain, str) else raw_domain
-            synth_cfg = SyntheticConfig(
+            init_kwargs["synthetic"] = SyntheticConfig(
                 uid=getattr(args, "synthetic_uid", "synth-01"),
                 callsign=getattr(args, "synthetic_callsign", "VIPER-SYNTH"),
                 domain=synth_domain,
@@ -326,7 +337,12 @@ class GatewayConfig(BaseModel):
         tak_udp = getattr(args, "tak_udp", None)
         if tak_udp:
             host, port = parse_host_port(tak_udp, default_port=4242)
-            udp_egress.append(UdpEgressConfig(host=host, port=port, queue_size=queue_size))
+            udp_egress.append(
+                UdpEgressConfig(
+                    host=host, port=port, queue_size=init_kwargs.get("queue_size", 1000)
+                )
+            )
+            init_kwargs["udp_egress"] = udp_egress
 
         tcp_egress: list[TcpEgressConfig] = []
         tak_tcp = getattr(args, "tak_tcp", None)
@@ -334,29 +350,46 @@ class GatewayConfig(BaseModel):
             host, port = parse_host_port(tak_tcp, default_port=8087)
             use_tls = bool(getattr(args, "tak_tcp_tls", False))
             tcp_egress.append(
-                TcpEgressConfig(host=host, port=port, use_tls=use_tls, queue_size=queue_size)
+                TcpEgressConfig(
+                    host=host,
+                    port=port,
+                    use_tls=use_tls,
+                    queue_size=init_kwargs.get("queue_size", 1000),
+                )
             )
-
-        if not udp_egress and not tcp_egress:
-            # Default fallback to UDP 127.0.0.1:4242
-            udp_egress.append(UdpEgressConfig(host="127.0.0.1", port=4242, queue_size=queue_size))
+            init_kwargs["tcp_egress"] = tcp_egress
 
         # Buffer configuration
-        buffer_cfg: BufferConfig | None = None
         buf_path = getattr(args, "buffer_path", None)
         if buf_path:
-            buffer_cfg = BufferConfig(
+            init_kwargs["buffer"] = BufferConfig(
                 db_path=buf_path,
                 max_records=getattr(args, "max_buffer_records", 10000),
                 replay_rate_hz=getattr(args, "replay_rate_hz", 20.0),
             )
 
-        return cls(
-            queue_size=queue_size,
-            mavlink=mavlink_cfg,
-            ros2=ros2_cfg,
-            synthetic=synth_cfg,
-            udp_egress=udp_egress,
-            tcp_egress=tcp_egress,
-            buffer=buffer_cfg,
-        )
+        config = cls(**init_kwargs)
+
+        # Apply ergonomic defaults if neither CLI nor environment variables
+        # configured egress or ingest adapters
+        if not config.udp_egress and not config.tcp_egress:
+            config = config.model_copy(
+                update={
+                    "udp_egress": [
+                        UdpEgressConfig(host="127.0.0.1", port=4242, queue_size=config.queue_size)
+                    ]
+                }
+            )
+
+        if not config.mavlink and not config.ros2 and not config.synthetic:
+            config = config.model_copy(
+                update={
+                    "synthetic": SyntheticConfig(
+                        uid="synth-01",
+                        callsign="VIPER-SYNTH",
+                        domain=VehicleDomain.AIR,
+                    )
+                }
+            )
+
+        return config
