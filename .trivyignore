@@ -1,0 +1,2 @@
+# FreeTAKServer upstream container requires writable filesystem for internal component logs
+KSV-0014
