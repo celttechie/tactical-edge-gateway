@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tactical-edge-gateway
+  namespace: tactical-edge
+  labels:
+    app.kubernetes.io/name: tactical-edge-gateway
+    app.kubernetes.io/part-of: tactical-edge-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tactical-edge-gateway
+  ports:
+    - name: mavlink-udp
+      port: 14550
+      targetPort: 14550
+      protocol: UDP
+    - name: cot-udp
+      port: 4242
+      targetPort: 4242
+      protocol: UDP
