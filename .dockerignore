@@ -1,0 +1,17 @@
+.git
+.gitignore
+.venv
+.github
+.agents
+.pytest_cache
+.coverage
+htmlcov
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+tests
+docs
+scratch
+packages
