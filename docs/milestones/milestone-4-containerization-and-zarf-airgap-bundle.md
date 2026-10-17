@@ -16,12 +16,12 @@
 - [x] Add comprehensive unit tests in `tests/unit/test_config.py` verifying environment variable inheritance and `.env` parsing.
 
 ### 2. DISA STIG-Compliant Rootless Containerization
-- [ ] Multi-stage Dockerfile adhering to DISA Container Hardening STIG guidelines:
+- [x] Multi-stage Dockerfile adhering to DISA Container Hardening STIG guidelines:
   - Non-root user execution (`UID 10001`, `GID 10001`, `edgeuser`).
   - Read-only root filesystem support with explicit writable `/data` volume for SQLite buffer and logs.
   - Minimal attack surface: zero unnecessary OS binaries, package managers, or compilers in the final runtime layer.
   - OCI standard container metadata and labels.
-- [ ] Container build automation and vulnerability scanning (`trivy` container image scan).
+- [x] Container build automation and vulnerability scanning (`trivy` container image scan with 0 findings).
 
 ### 3. Defense Unicorns Zarf Air-Gap Package (`zarf.yaml`)
 - [ ] Declarative `zarf.yaml` package definition:
