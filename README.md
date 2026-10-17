@@ -1,11 +1,12 @@
 # Tactical Edge Gateway (`tactical-edge-gateway`)
 
-[![Status](https://img.shields.io/badge/Status-Active%20Development%20%7C%20Untested-orange.svg)](docs/IMPLEMENTATION_PLAN.md)
+[![Status](https://img.shields.io/badge/Status-Milestones%201--4%20Complete%20%7C%20Milestone%205%20In%20Progress-brightgreen.svg)](docs/IMPLEMENTATION_PLAN.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg)](pyproject.toml)
 [![Zarf](https://img.shields.io/badge/Packaging-Defense%20Unicorns%20Zarf-orange.svg)](packages/zarf/zarf.yaml)
 [![Compliance](https://img.shields.io/badge/Compliance-Defense%20Unicorns%20Lula-teal.svg)](docs/adr/0007-continuous-compliance-and-oscal-assessment-lula.md)
 [![Security](https://img.shields.io/badge/Identity-Deterministic%20Ed25519-purple.svg)](scripts/generate-deterministic-keys.py)
+
 
 An air-gapped, resilient tactical telemetry gateway bridging heterogeneous autonomy and unmanned systems data streams (**MAVLink** and **ROS2 / DDS**) to military Command and Control (C2) situational awareness tools (**Cursor on Target / TAK Server**) over contested, disconnected (DIL) tactical radio links.
 
@@ -75,21 +76,26 @@ This codebase emphasizes technical debt vigilance and architectural rigor over u
 
 ```text
 tactical-edge-gateway/
+├── compliance/
+│   └── lula/                     # OSCAL component definitions (oscal-component.yaml)
 ├── docs/
 │   ├── IMPLEMENTATION_PLAN.md    # Step-by-step engineering roadmap
 │   ├── adr/                      # Architecture Decision Records (ADRs 0001-0010)
 │   ├── milestones/               # Tracked milestones (1 through 5)
 │   └── security/                 # Threat model & deterministic key specs
 ├── packages/
-│   └── zarf/                     # Air-gap Zarf package definition (zarf.yaml)
+│   └── zarf/                     # Air-gap Zarf package definition (zarf.yaml) & K8s manifests
 ├── scripts/
 │   ├── generate-deterministic-keys.py  # HKDF-SHA256 Ed25519 generator
-│   └── setup-ssh.sh                    # Host config & SSH onboarding
+│   ├── setup-ssh.sh                    # Host config & SSH onboarding
+│   ├── validate-lula-compliance.sh     # Automated OSCAL compliance validator
+│   └── verify-airgap-package.sh        # Air-gap package verification script
 ├── src/
 │   └── tactical_edge_gateway/    # Core Python application modules
 ├── tests/
 │   ├── unit/                     # Unit test suites
-│   └── integration/              # End-to-end integration tests
+│   └── integration/              # End-to-end integration tests (Zarf, container, Lula)
+├── lula.yaml                     # Root symlink to compliance/lula/oscal-component.yaml
 ├── Makefile                      # Build, test, and automation commands
 ├── pyproject.toml                # Project metadata and dependencies
 └── README.md
@@ -127,7 +133,15 @@ make test
 make zarf-package
 ```
 
+### 5. Automated Compliance Validation with Lula
+```bash
+# Lint OSCAL definitions and validate NIST SP 800-53 controls
+make lula-lint
+make lula-validate
+```
+
 ---
+
 
 ## Architecture Decision Records (ADRs)
 

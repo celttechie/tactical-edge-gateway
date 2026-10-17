@@ -46,21 +46,22 @@ flowchart LR
 * Decouple `GatewayEngine` initialization from CLI args using `GatewayConfig` Pydantic models.
 * Harmonize operational metrics under unified `Stats` hierarchy.
 
-### Phase 4: Rootless Containerization, Zarf Packaging & Lula Compliance
-* Implement 12-factor configuration via `pydantic-settings`, supporting nested environment variables (`TEG_*`) and `.env` files.
-* Build multi-stage Dockerfile adhering to DISA Container Hardening STIG (non-root `edgeuser` UID 10001, read-only rootfs).
-* Create declarative `zarf.yaml` package bundling:
+### Phase 4: Rootless Containerization, Zarf Packaging & Lula Compliance (Completed)
+* [x] Implement 12-factor configuration via `pydantic-settings`, supporting nested environment variables (`TEG_*`) and `.env` files.
+* [x] Build multi-stage Dockerfile adhering to DISA Container Hardening STIG (non-root `edgeuser` UID 10001, read-only rootfs).
+* [x] Create declarative `zarf.yaml` package bundling:
   * Gateway container image.
   * FreeTAKServer container image.
-  * Local configuration manifests.
-* Integrate Defense Unicorns **Lula** (`lula.yaml`) mapping deployment to NIST SP 800-53 controls (SC-8, AC-3, AC-6, SI-4).
-* Test offline deployment with `zarf package create` and `zarf package deploy`.
+  * Kubernetes Restricted Pod Security Standards manifests.
+* [x] Integrate Defense Unicorns **Lula** (`compliance/lula/oscal-component.yaml` / `lula.yaml`) mapping deployment to NIST SP 800-53 Rev 5 controls (SC-8, AC-3, AC-6, SI-4) and documenting FreeTAKServer deviation (`KSV-0014`).
+* [x] Test offline packaging with `zarf package create`, air-gap inspection, and automated compliance validation.
 
-### Phase 5: End-to-End Validation & ATAK Demonstration
-* Run automated end-to-end integration scenario traversing airborne drone paths and ground rover routes simultaneously.
-* Connect ATAK-CIV Android or WinTAK client to FreeTAKServer.
-* Demonstrate real-time blue force tracking, link drop recovery, and historical breadcrumb synchronization.
-* Record terminal and UI walkthrough for GitHub presentation.
+### Phase 5: End-to-End Validation & ATAK Demonstration (In Progress)
+* [ ] Run automated end-to-end integration scenario traversing airborne drone paths and ground rover routes simultaneously.
+* [ ] Connect ATAK-CIV Android or WinTAK client to FreeTAKServer.
+* [ ] Demonstrate real-time blue force tracking, link drop recovery, and historical breadcrumb synchronization.
+* [ ] Record terminal and UI walkthrough for GitHub presentation.
+
 
 ---
 
