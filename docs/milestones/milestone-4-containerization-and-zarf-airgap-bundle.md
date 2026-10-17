@@ -1,6 +1,6 @@
 # Milestone 4: Containerization, Zarf Airgap Bundle & Lula Compliance
 
-**Status:** In Progress
+**Status:** Completed
 **Objective:** Deliver 12-factor environment configuration via `pydantic-settings`, an immutable rootless OCI container adhering to DISA STIGs, a declarative Defense Unicorns Zarf package for offline deployment, and automated NIST SP 800-53 compliance assessment via Lula.
 
 ---
@@ -31,11 +31,12 @@
 - [x] Air-gap verification test script running `zarf package create` and `zarf package inspect` in disconnected network conditions.
 
 ### 4. Defense Unicorns Lula Integration (`lula.yaml`)
-- [ ] OSCAL Component Definition mapping gateway controls to NIST SP 800-53 Rev 5:
+- [x] OSCAL Component Definition mapping gateway controls to NIST SP 800-53 Rev 5:
   - **SC-8 (Transmission Confidentiality and Integrity):** TLS encrypted TAK TCP transport.
-  - **AC-3 / AC-6 (Access Enforcement & Least Privilege):** Non-root container execution (`UID 10001`) and read-only rootfs.
+  - **AC-3 / AC-6 (Access Enforcement & Least Privilege):** Non-root container execution (`UID 10001`) and read-only rootfs; documented FreeTAKServer deviation (`KSV-0014`) with compensating controls.
   - **SI-4 (Information System Monitoring):** Operational stats tracking and circuit breaker health probes.
-- [ ] Validation script executing `lula validate` during continuous delivery pipelines.
+- [x] Validation script executing `lula validate` and `lula dev validate` during continuous delivery pipelines.
+
 
 ---
 

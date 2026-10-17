@@ -1,0 +1,191 @@
+component-definition:
+  uuid: 19ca36f9-3fa8-42b9-bfd2-0315d7d4354d
+  metadata:
+    title: Tactical Edge Gateway OSCAL Component Definition
+    last-modified: "2026-10-17T00:00:00Z"
+    version: "0.1.0"
+    oscal-version: "1.1.2"
+  components:
+    - uuid: 9d2816d7-c0a9-4d3b-9d43-9ceef5ac2434
+      type: software
+      title: tactical-edge-gateway
+      description: Tactical Edge Gateway - protocol translation, resilient SQLite buffering, and tactical TAK egress
+      purpose: Interoperability gateway bridging MAVLink and ROS2 telemetry into Cursor on Target (CoT) XML for TAK networks
+      control-implementations:
+        - uuid: bdfb447c-86c0-47dd-badc-2504b34dc7bd
+          source: https://raw.githubusercontent.com/usnistgov/oscal-content/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json
+          description: NIST SP 800-53 Rev 5 Control Implementations for Tactical Edge Gateway
+          implemented-requirements:
+            - uuid: 48e0c62a-c1a4-4cfc-9268-a20e97d72f2c
+              control-id: ac-3
+              description: >-
+                Access Enforcement: Enforced via non-root container execution (UID 10001 edgeuser),
+                complete Linux capability dropping (ALL), and prevention of privilege escalation across
+                all tactical workload containers in the tactical-edge namespace.
+              links:
+                - href: "#1b844043-c480-4fa3-b241-9d3c0b511633"
+                  rel: lula
+            - uuid: 5b150c3d-6805-46a2-a4b1-d22e35676ad1
+              control-id: ac-6
+              description: >-
+                Least Privilege: Enforced via immutable read-only root filesystems (readOnlyRootFilesystem: true)
+                and dedicated emptyDir mounts for ephemeral state (/data and /tmp).
+                Deviation Notice (KSV-0014): Upstream FreeTAKServer requires a writable Python directory for
+                legacy internal log output and cannot run with readOnlyRootFilesystem: true.
+                Compensating Controls: Upstream FreeTAKServer executes as dedicated unprivileged UID 999 (freetak),
+                drops all Linux capabilities (ALL), prohibits privilege escalation (allowPrivilegeEscalation: false),
+                and is deployed within a Kubernetes Pod Security Standards Restricted namespace.
+              links:
+                - href: "#f262ad3f-ae1d-48fa-9711-0096dceb5712"
+                  rel: lula
+            - uuid: ec15323e-18a5-438a-a433-0660fd0cec8d
+              control-id: sc-8
+              description: >-
+                Transmission Confidentiality and Integrity: The tactical system establishes encrypted
+                communication channels for tactical edge data. FreeTAKServer exposes a dedicated TLS-encrypted
+                streaming socket on TCP port 8089 (cot-tls) for TAK server-to-server and client communication.
+              links:
+                - href: "#a1761a95-1f7c-4684-ac41-bdc4bf696c6a"
+                  rel: lula
+            - uuid: 37eb0cd3-4538-465a-b3d3-b66af5f9380d
+              control-id: si-4
+              description: >-
+                Information System Monitoring: Continuous monitoring of gateway system health, circuit breaker
+                status, and operational performance via Kubernetes liveness and readiness exec probes
+                inspecting Python runtime and telemetry queues.
+              links:
+                - href: "#44544e49-7edc-4cd1-812c-9d70f8ab9d56"
+                  rel: lula
+  back-matter:
+    resources:
+      - uuid: 1b844043-c480-4fa3-b241-9d3c0b511633
+        title: Lula Validation - AC-3 Access Enforcement
+        description: >-
+          domain:
+            type: kubernetes
+            kubernetes-spec:
+              resources:
+                - name: livedeployments
+                  resource-rule:
+                    group: apps
+                    version: v1
+                    resource: deployments
+                    namespaces: [tactical-edge]
+          provider:
+            type: opa
+            opa-spec:
+              rego: |
+                package validate
+
+                import future.keywords.every
+                import future.keywords.in
+
+                validate {
+                  count(input.livedeployments) > 0
+                  every dep in input.livedeployments {
+                    dep.spec.template.spec.securityContext.runAsNonRoot == true
+                    every c in dep.spec.template.spec.containers {
+                      c.securityContext.allowPrivilegeEscalation == false
+                      c.securityContext.capabilities.drop[_] == "ALL"
+                    }
+                  }
+                  some teg in input.livedeployments
+                  teg.metadata.name == "tactical-edge-gateway"
+                  teg.spec.template.spec.securityContext.runAsUser == 10001
+                }
+
+      - uuid: f262ad3f-ae1d-48fa-9711-0096dceb5712
+        title: Lula Validation - AC-6 Least Privilege
+        description: >-
+          domain:
+            type: kubernetes
+            kubernetes-spec:
+              resources:
+                - name: livedeployments
+                  resource-rule:
+                    group: apps
+                    version: v1
+                    resource: deployments
+                    namespaces: [tactical-edge]
+          provider:
+            type: opa
+            opa-spec:
+              rego: |
+                package validate
+
+                import future.keywords.every
+                import future.keywords.in
+
+                validate {
+                  count(input.livedeployments) > 0
+                  some teg in input.livedeployments
+                  teg.metadata.name == "tactical-edge-gateway"
+                  teg.spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem == true
+
+                  some fts in input.livedeployments
+                  fts.metadata.name == "freetakserver"
+                  fts.spec.template.spec.securityContext.runAsUser == 999
+                  fts.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation == false
+                }
+
+      - uuid: a1761a95-1f7c-4684-ac41-bdc4bf696c6a
+        title: Lula Validation - SC-8 Transmission Confidentiality and Integrity
+        description: >-
+          domain:
+            type: kubernetes
+            kubernetes-spec:
+              resources:
+                - name: liveservices
+                  resource-rule:
+                    version: v1
+                    resource: services
+                    namespaces: [tactical-edge]
+          provider:
+            type: opa
+            opa-spec:
+              rego: |
+                package validate
+
+                import future.keywords.every
+                import future.keywords.in
+
+                validate {
+                  count(input.liveservices) > 0
+                  some svc in input.liveservices
+                  svc.metadata.name == "freetakserver"
+                  some p in svc.spec.ports
+                  p.name == "cot-tls"
+                  p.port == 8089
+                  p.protocol == "TCP"
+                }
+
+      - uuid: 44544e49-7edc-4cd1-812c-9d70f8ab9d56
+        title: Lula Validation - SI-4 Information System Monitoring
+        description: >-
+          domain:
+            type: kubernetes
+            kubernetes-spec:
+              resources:
+                - name: livedeployments
+                  resource-rule:
+                    group: apps
+                    version: v1
+                    resource: deployments
+                    namespaces: [tactical-edge]
+          provider:
+            type: opa
+            opa-spec:
+              rego: |
+                package validate
+
+                import future.keywords.every
+                import future.keywords.in
+
+                validate {
+                  count(input.livedeployments) > 0
+                  some teg in input.livedeployments
+                  teg.metadata.name == "tactical-edge-gateway"
+                  c := teg.spec.template.spec.containers[0]
+                  c.livenessProbe != null
+                  c.readinessProbe != null
+                }

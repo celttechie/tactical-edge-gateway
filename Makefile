@@ -9,7 +9,7 @@ VENV ?= .venv
 PYTHON ?= $(VENV)/bin/python3
 PIP ?= $(VENV)/bin/pip
 
-.PHONY: help venv install dev-install lint format test security pre-commit pre-commit-install clean keys docker-build zarf-package
+.PHONY: help venv install dev-install lint format test security pre-commit pre-commit-install clean keys docker-build zarf-package lula-lint lula-validate
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -71,6 +71,16 @@ zarf-package: ## Build declarative air-gapped Zarf package
 	else \
 		echo "Zarf CLI not found in PATH. Please install zarf to package for air-gap."; \
 	fi
+
+lula-lint: ## Lint OSCAL Component Definition against upstream schema
+	@if command -v lula >/dev/null 2>&1; then \
+		lula tools lint -f compliance/lula/oscal-component.yaml; \
+	else \
+		echo "Lula CLI not found in PATH. Please install lula to lint OSCAL definitions."; \
+	fi
+
+lula-validate: ## Run automated Lula OSCAL compliance assessment
+	@./scripts/validate-lula-compliance.sh
 
 clean: ## Clean build, test, and temporary cache artifacts
 	rm -rf build/ dist/ *.egg-info .pytest_cache/ .coverage htmlcov/
