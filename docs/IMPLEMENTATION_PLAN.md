@@ -47,7 +47,8 @@ flowchart LR
 * Harmonize operational metrics under unified `Stats` hierarchy.
 
 ### Phase 4: Rootless Containerization, Zarf Packaging & Lula Compliance
-* Build multi-stage Dockerfile adhering to DISA Container Hardening STIG (non-root `edgeuser`, read-only rootfs).
+* Implement 12-factor configuration via `pydantic-settings`, supporting nested environment variables (`TEG_*`) and `.env` files.
+* Build multi-stage Dockerfile adhering to DISA Container Hardening STIG (non-root `edgeuser` UID 10001, read-only rootfs).
 * Create declarative `zarf.yaml` package bundling:
   * Gateway container image.
   * FreeTAKServer container image.
