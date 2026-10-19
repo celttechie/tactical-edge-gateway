@@ -1,0 +1,10 @@
+<MissionPackageManifest version="2">
+  <Configuration>
+    <Parameter name="name" value="Tactical Edge Gateway FreeTAKServer Connection"/>
+    <Parameter name="uid" value="teg-freetakserver-connection-pkg"/>
+    <Parameter name="onReceiveDelete" value="false"/>
+  </Configuration>
+  <Contents>
+    <Content ignore="false" zipEntry="teg-freetakserver.pref"/>
+  </Contents>
+</MissionPackageManifest>

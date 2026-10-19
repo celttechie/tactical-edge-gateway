@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<preferences>
+  <preference version="1" name="cot_streams">
+    <entry key="count" class="java.lang.Integer">1</entry>
+    <entry key="description0" class="java.lang.String">Tactical Edge Gateway - FreeTAKServer</entry>
+    <entry key="enabled0" class="java.lang.Boolean">true</entry>
+    <entry key="connectString0" class="java.lang.String">127.0.0.1:8087:tcp</entry>
+  </preference>
+  <preference version="1" name="com.atakmap.app_preferences">
+    <entry key="displayServerConnectionWidget" class="java.lang.Boolean">true</entry>
+  </preference>
+</preferences>
