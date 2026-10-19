@@ -48,7 +48,7 @@ The gateway consumes heterogeneous telemetry frames from autonomous unmanned sys
 | **Edge Host / IP** | `127.0.0.1` or LAN Mesh IP | Default local loopback or edge node IP |
 | **CoT Streaming Port** | `8087` (TCP) | Standard non-TLS FreeTAKServer ingestion port |
 | **CoT Multicast Port** | `4242` / `6969` (UDP) | Legacy / direct broadcast streaming |
-| **WebTAK UI** | `http://<host>:8080` | Web browser tactical situational awareness |
+| **Data Package & API** | `http://<host>:8080` | FreeTAKServer Data Package & Marti HTTP API (returns 'hello world' on `/`) |
 | **FTS REST API** | `http://<host>:19023` | FreeTAKServer administration & API |
 
 ---

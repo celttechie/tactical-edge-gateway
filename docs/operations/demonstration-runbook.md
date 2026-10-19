@@ -65,7 +65,7 @@ docker run -d --name freetakserver \
   -p 8087:8087/tcp \
   -p 8080:8080/tcp \
   -p 19023:19023/tcp \
-  freetakteam/freetakserver:latest
+  ghcr.io/freetakteam/freetakserver:latest
 ```
 
 ### Step 2: Connect ATAK-CIV / WinTAK
@@ -98,7 +98,7 @@ Deploy the declarative air-gapped package to an edge Kubernetes cluster (e.g., K
 ### Step 1: Deploy Air-Gap Package via Zarf
 ```bash
 # In an air-gapped node with zarf CLI:
-zarf package deploy packages/zarf/zarf-package-tactical-edge-gateway-arm64-0.1.0.tar.zst --confirm
+zarf package deploy packages/zarf/zarf-package-tactical-edge-gateway-*.tar.zst --confirm
 ```
 
 ### Step 2: Verify Pod Security & Running Services
