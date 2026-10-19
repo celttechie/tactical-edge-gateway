@@ -55,9 +55,42 @@ The gateway consumes heterogeneous telemetry frames from autonomous unmanned sys
 
 ## 3. Client Configuration Procedures
 
-### Option A: Automatic Import via Mission Package (Recommended)
+### Option A: Interactive Package Builder & Mobile Download (Recommended)
 
-The gateway repository provides a pre-packaged ATAK Data Package ready for single-click import.
+Generate an ATAK Data Package tailored to your host's network IP (Wi-Fi, LAN, or Tailscale) and download it directly onto your mobile phone without cables or cloud accounts:
+
+1. **Build and Serve over Local HTTP**:
+   ```bash
+   # Auto-detect routable host IP and start lightweight download server:
+   make atak-serve
+
+   # Or interactively select from detected network interfaces:
+   .venv/bin/python scripts/build-atak-package.py -i --serve
+
+   # Or explicitly specify target IP or hostname:
+   .venv/bin/python scripts/build-atak-package.py --host 192.168.9.146 --serve
+   ```
+
+2. **Download & Import on Android (ATAK-CIV)**:
+   - Open your mobile browser and navigate to the printed URL:
+     ```text
+     http://<HOST_IP>:8000/teg-mission-package.zip
+     ```
+   - When download completes, tap the notification or file in Downloads and select **Open with ATAK**.
+   - ATAK automatically prompts:
+     > *"Server configuration found. Do you want to connect to Tactical Edge Gateway - FreeTAKServer?"*
+   - Tap **Yes** to activate.
+
+3. **Build Package File Offline (Without HTTP Server)**:
+   ```bash
+   make atak-package
+   ```
+
+---
+
+### Option B: Pre-Packaged Mission Package Import
+
+If importing the default package (`127.0.0.1:8087` for local WinTAK or Android emulators):
 
 1. Locate the mission package in the repository:
    ```bash
@@ -75,7 +108,7 @@ The gateway repository provides a pre-packaged ATAK Data Package ready for singl
 
 ---
 
-### Option B: Preference File Import (`.pref`)
+### Option C: Preference File Import (`.pref`)
 
 If deploying configuration files directly via Mobile Device Management (MDM) or TAK Server Data Synchronization:
 
@@ -99,7 +132,7 @@ If deploying configuration files directly via Mobile Device Management (MDM) or 
 
 ---
 
-### Option C: Manual Client Connection Setup
+### Option D: Manual Client Connection Setup
 
 If configuring an ATAK client manually from the user interface:
 

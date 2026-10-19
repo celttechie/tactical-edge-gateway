@@ -16,6 +16,7 @@ import pytest
 from pymavlink import mavutil
 from pymavlink.dialects.v20 import common as mavlink2
 
+from scripts.common import find_free_port as _find_free_port
 from tactical_edge_gateway.core.engine import GatewayEngine
 from tactical_edge_gateway.core.models import VehicleDomain
 from tactical_edge_gateway.egress.tcp import TcpEgressClient
@@ -24,16 +25,6 @@ from tactical_edge_gateway.ingest.mavlink import MavlinkAdapter
 from tactical_edge_gateway.ingest.ros2 import ROS2Adapter
 from tactical_edge_gateway.ingest.synthetic import SyntheticAdapter
 from tactical_edge_gateway.transform.cot import CoTTransformer
-
-
-def _find_free_port(is_udp: bool = True) -> int:
-    """Finds an unused local port for testing."""
-    sock_type = socket.SOCK_DGRAM if is_udp else socket.SOCK_STREAM
-    sock = socket.socket(socket.AF_INET, sock_type)
-    sock.bind(("127.0.0.1", 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    return port
 
 
 class MockHeader:

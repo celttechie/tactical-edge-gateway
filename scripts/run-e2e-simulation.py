@@ -31,14 +31,32 @@ from tactical_edge_gateway.core.models import (
 )
 from tactical_edge_gateway.egress.tcp import TcpEgressClient
 
-# ANSI terminal formatting
-C_RESET = "\033[0m"
-C_BOLD = "\033[1m"
-C_GREEN = "\033[32m"
-C_RED = "\033[31m"
-C_YELLOW = "\033[33m"
-C_CYAN = "\033[36m"
-C_MAGENTA = "\033[35m"
+# Support running as a standalone script or module
+try:
+    from scripts.common import (
+        C_BOLD,
+        C_CYAN,
+        C_GREEN,
+        C_RED,
+        C_RESET,
+        C_YELLOW,
+        DEFAULT_TAK_PORT,
+        MockTakServer,
+    )
+except ImportError:
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from scripts.common import (
+        C_BOLD,
+        C_CYAN,
+        C_GREEN,
+        C_RED,
+        C_RESET,
+        C_YELLOW,
+        DEFAULT_TAK_PORT,
+        MockTakServer,
+    )
 
 # Camp Roberts, CA tactical test coordinates
 UAV_BASE_LAT = 35.7100
@@ -79,7 +97,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--tak-port",
         type=int,
-        default=8087,
+        default=DEFAULT_TAK_PORT,
         help="Target TAK Server TCP port (CoT stream)",
     )
     parser.add_argument(
@@ -95,58 +113,6 @@ def parse_args() -> argparse.Namespace:
         help="Connect to an external live TAK Server (e.g. FreeTAKServer)",
     )
     return parser.parse_args()
-
-
-class MockTakServer:
-    """Mock TAK server that can dynamically sever and restore listener sockets."""
-
-    def __init__(self, host: str, port: int) -> None:
-        self.host = host
-        self.port = port
-        self.server: asyncio.Server | None = None
-        self.is_accepting = True
-        self.received_messages: list[bytes] = []
-        self._writers: list[asyncio.StreamWriter] = []
-
-    async def start(self) -> None:
-        self.is_accepting = True
-        self.server = await asyncio.start_server(self._handle_client, self.host, self.port)
-
-    async def _handle_client(
-        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-    ) -> None:
-        self._writers.append(writer)
-        while self.is_accepting:
-            try:
-                data = await reader.read(4096)
-                if not data:
-                    break
-                self.received_messages.append(data.strip())
-            except Exception:
-                break
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:  # nosec B110
-            pass
-
-    async def sever_link(self) -> None:
-        """Simulates radio loss by terminating active connections and closing socket."""
-        self.is_accepting = False
-        for w in self._writers:
-            try:
-                w.close()
-            except Exception:  # nosec B110
-                pass
-        self._writers.clear()
-        if self.server:
-            self.server.close()
-            await self.server.wait_closed()
-            self.server = None
-
-    async def restore_link(self) -> None:
-        """Restores radio link by reopening the listener socket."""
-        await self.start()
 
 
 async def run_mission(args: argparse.Namespace) -> None:
