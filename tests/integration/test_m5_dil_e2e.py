@@ -12,11 +12,11 @@ Validates:
 from __future__ import annotations
 
 import asyncio
-import socket
 from pathlib import Path
 
 import pytest
 
+from scripts.common import MockTakServer, find_free_port
 from tactical_edge_gateway.buffer.circuit_breaker import CircuitBreaker
 from tactical_edge_gateway.buffer.models import BufferState, CircuitState
 from tactical_edge_gateway.buffer.sqlite import SqliteBuffer
@@ -29,14 +29,6 @@ from tactical_edge_gateway.core.models import (
     VehicleDomain,
 )
 from tactical_edge_gateway.egress.tcp import TcpEgressClient
-
-
-def _get_free_port() -> int:
-    """Finds an available local TCP port."""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
-
 
 # Sample tactical waypoint route for ground rover (simulating perimeter traversal)
 GROUND_ROVER_WAYPOINTS = [
@@ -69,34 +61,12 @@ async def test_m5_e2e_autonomous_telemetry_outage_and_recovery(tmp_path: Path) -
 
     Asserts circuit breaker tripping, SQLite buffering, link recovery, and zero loss.
     """
-    port = _get_free_port()
-
+    port = find_free_port()
     db_path = tmp_path / "m5_e2e_buffer.db"
 
-    received_payloads: list[bytes] = []
-    active_writers: list[asyncio.StreamWriter] = []
-    server_active = True
-
-    async def mock_tak_server_cb(
-        reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-    ) -> None:
-        active_writers.append(writer)
-        while server_active:
-            try:
-                data = await reader.read(4096)
-                if not data:
-                    break
-                received_payloads.append(data.strip())
-            except Exception:
-                break
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
-
     # 1. Initialize Mock TAK Server (Phase 1: Connected RF link)
-    server = await asyncio.start_server(mock_tak_server_cb, "127.0.0.1", port)
+    mock_server = MockTakServer("127.0.0.1", port)
+    await mock_server.start()
 
     # 2. Configure GatewayEngine with SQLite WAL buffer and responsive CircuitBreaker
     sqlite_buffer = SqliteBuffer(db_path=db_path)
@@ -163,8 +133,8 @@ async def test_m5_e2e_autonomous_telemetry_outage_and_recovery(tmp_path: Path) -
             await asyncio.sleep(0.05)
 
         # Verify initial live telemetry reached the TAK server
-        assert len(received_payloads) >= 4
-        all_phase1 = b"".join(received_payloads)
+        assert len(mock_server.received_messages) >= 4
+        all_phase1 = b"".join(mock_server.received_messages)
         assert b"a-f-A-M-F" in all_phase1  # Air drone CoT symbol
         assert b"a-f-G-E-V-U" in all_phase1  # Ground rover CoT symbol
         assert b"RECON-ALPHA" in all_phase1
@@ -174,11 +144,7 @@ async def test_m5_e2e_autonomous_telemetry_outage_and_recovery(tmp_path: Path) -
         # ---------------------------------------------------------------------
         # PHASE 2: Network Impairment (Severe Radio Outage / Jamming)
         # ---------------------------------------------------------------------
-        server_active = False
-        for w in active_writers:
-            w.close()
-        server.close()
-        await server.wait_closed()
+        await mock_server.sever_link()
         await asyncio.sleep(0.1)
 
         # Vehicles continue autonomous navigation during blackout (Waypoints 3..5)
@@ -233,9 +199,7 @@ async def test_m5_e2e_autonomous_telemetry_outage_and_recovery(tmp_path: Path) -
         # ---------------------------------------------------------------------
         # PHASE 3: Link Recovery & Store-and-Forward Backfill
         # ---------------------------------------------------------------------
-        server_active = True
-        active_writers.clear()
-        recovered_server = await asyncio.start_server(mock_tak_server_cb, "127.0.0.1", port)
+        await mock_server.restore_link()
 
         # Wait for circuit breaker probe and recovery (HALF_OPEN -> CLOSED)
         recovery_deadline = asyncio.get_event_loop().time() + 3.0
@@ -273,11 +237,7 @@ async def test_m5_e2e_autonomous_telemetry_outage_and_recovery(tmp_path: Path) -
         await asyncio.sleep(0.2)
 
         # Shutdown recovered server
-        server_active = False
-        for w in active_writers:
-            w.close()
-        recovered_server.close()
-        await recovered_server.wait_closed()
+        await mock_server.stop()
 
         # ---------------------------------------------------------------------
         # FINAL AUDIT: All telemetry delivered with zero loss
@@ -286,7 +246,7 @@ async def test_m5_e2e_autonomous_telemetry_outage_and_recovery(tmp_path: Path) -
         assert stats.pending_records == 0
         assert stats.synced_records >= 6
 
-        total_delivered_payloads = b"".join(received_payloads)
+        total_delivered_payloads = b"".join(mock_server.received_messages)
         # Verify both UAV and Rover points from all 3 phases are present in the stream
         assert b"RECON-ALPHA" in total_delivered_payloads
         assert b"ROVER-TERRA" in total_delivered_payloads

@@ -9,7 +9,7 @@ VENV ?= .venv
 PYTHON ?= $(VENV)/bin/python3
 PIP ?= $(VENV)/bin/pip
 
-.PHONY: help venv install dev-install lint format test security pre-commit pre-commit-install clean keys docker-build zarf-package lula-lint lula-validate demo
+.PHONY: help venv install dev-install lint format test security pre-commit pre-commit-install clean keys docker-build zarf-package lula-lint lula-validate demo atak-package atak-serve
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -30,13 +30,13 @@ dev-install: venv ## Install project dependencies in editable mode with developm
 	fi
 
 lint: venv ## Run flake8 and code formatting checks
-	$(VENV)/bin/flake8 src tests
-	$(VENV)/bin/black --check src tests
-	$(VENV)/bin/isort --check-only src tests
+	$(VENV)/bin/flake8 src tests scripts
+	$(VENV)/bin/black --check src tests scripts
+	$(VENV)/bin/isort --check-only src tests scripts
 
 format: venv ## Automatically format code using black and isort
-	$(VENV)/bin/black src tests
-	$(VENV)/bin/isort src tests
+	$(VENV)/bin/black src tests scripts
+	$(VENV)/bin/isort src tests scripts
 
 test: venv ## Run unit and integration tests with coverage
 	$(VENV)/bin/pytest tests/
@@ -84,6 +84,12 @@ lula-validate: ## Run automated Lula OSCAL compliance assessment
 
 demo: venv ## Run interactive end-to-end mission simulation with simulated RF blackout
 	$(PYTHON) scripts/run-e2e-simulation.py $(ARGS)
+
+atak-package: venv ## Build custom ATAK mission package (.zip and .pref) with auto-discovered or specified IP
+	$(PYTHON) scripts/build-atak-package.py $(ARGS)
+
+atak-serve: venv ## Build custom ATAK mission package and serve over HTTP for direct mobile download
+	$(PYTHON) scripts/build-atak-package.py --serve $(ARGS)
 
 clean: ## Clean build, test, and temporary cache artifacts
 	rm -rf build/ dist/ *.egg-info .pytest_cache/ .coverage htmlcov/
