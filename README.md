@@ -1,6 +1,6 @@
 # Tactical Edge Gateway (`tactical-edge-gateway`)
 
-[![Status](https://img.shields.io/badge/Status-Milestones%201--4%20Complete%20%7C%20Milestone%205%20In%20Progress-brightgreen.svg)](docs/IMPLEMENTATION_PLAN.md)
+[![Status](https://img.shields.io/badge/Status-Milestones%201--5%20Complete%20%7C%20Project%20Verified-brightgreen.svg)](docs/IMPLEMENTATION_PLAN.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg)](pyproject.toml)
 [![Zarf](https://img.shields.io/badge/Packaging-Defense%20Unicorns%20Zarf-orange.svg)](packages/zarf/zarf.yaml)
